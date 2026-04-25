@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import random
 import heapq
 from scipy.ndimage import distance_transform_edt, label
+import os
 
 def render_grid(grid_layer):
     plt.figure(figsize=(8, 8))
@@ -182,56 +183,78 @@ def render_layers(matrices):
     plt.tight_layout()
     plt.show()
 
-def render_merged(layers, altitude):
+def render_merged(flat, altitude):
     rows, cols = altitude.shape
-    merged = np.zeros((rows, cols), dtype=np.float32)
-    merged = np.where(layers['forest'] > 0, 1.0, merged)
-    merged = np.where(layers['urban']  > 0, 2.0, merged)
-    merged = np.where(layers['roads']  > 0, 3.0, merged)
-    merged = np.where(layers['water'] == 1.0, 4.0, merged)
-    merged = np.where(layers['water'] == 2.0, 5.0, merged)
+    image = np.zeros((rows, cols, 4), dtype=np.float32)
 
-    colors = ['#1a1a1a', '#2d6a2d', '#b5651d', '#e0e0e0', '#4a9fd4', '#1a4a7a']
-    cmap = plt.matplotlib.colors.ListedColormap(colors)
+    # background
+    image[:, :] = [0.10, 0.10, 0.10, 1.0]
+
+    # forest — density shading
+    forest_norm = flat[:, :, 0] / (flat[:, :, 0].max() + 1e-6)
+    forest_mask = flat[:, :, 0] > 0
+    image[forest_mask, 0] = 0.05 + forest_norm[forest_mask] * 0.2
+    image[forest_mask, 1] = 0.25 + forest_norm[forest_mask] * 0.4
+    image[forest_mask, 2] = 0.05
+    image[forest_mask, 3] = 1.0
+
+    # shallow water
+    image[flat[:, :, 3] == 1.0] = [0.29, 0.62, 0.83, 1.0]
+
+    # deep water
+    image[flat[:, :, 3] == 2.0] = [0.10, 0.29, 0.48, 1.0]
+
+    # urban
+    image[flat[:, :, 1] > 0] = [0.71, 0.40, 0.11, 1.0]
+
+    # roads
+    image[flat[:, :, 2] > 0] = [0.88, 0.88, 0.88, 1.0]
 
     plt.figure(figsize=(8, 8))
-    plt.imshow(merged, cmap=cmap, interpolation='nearest', vmin=0, vmax=5)
+    plt.imshow(image, interpolation='nearest')
     plt.axis('off')
     plt.title('Merged Map')
     plt.show()
 
 
-def render_merged_3d_scatter(layers, altitude, point_size=10):
+def render_merged_3d_scatter(flat, altitude, point_size=10):
     rows, cols = altitude.shape
 
-
-    merged = np.zeros((rows, cols), dtype=np.float32)
-    merged = np.where(matrices[:, :, 0] > 0, 1.0, merged)  # forest
-    merged = np.where(matrices[:, :, 2] > 0, 2.0, merged)  # city
-    merged = np.where(matrices[:, :, 3] > 0, 3.0, merged)  # roads
-    merged = np.where(matrices[:, :, 4] == 1.0, 4.0, merged)  # shallow water
-    merged = np.where(matrices[:, :, 4] == 2.0, 5.0, merged)  # deep water
-
     color_lookup = {
-        0.0: '#1a1a1a',  # background
-        1.0: '#2d6a2d',  # forest
-        2.0: '#b5651d',  # city
-        3.0: '#e0e0e0',  # roads
-        4.0: '#4a9fd4',  # shallow water
-        5.0: '#1a4a7a',  # deep water  <- add this
+        'bg':           [0.10, 0.10, 0.10],
+        'shallow':      [0.29, 0.62, 0.83],
+        'deep':         [0.10, 0.29, 0.48],
+        'urban':        [0.71, 0.40, 0.11],
+        'roads':        [0.88, 0.88, 0.88],
     }
 
     xs, ys = np.meshgrid(np.arange(cols), np.arange(rows))
     xs = xs.flatten()
     ys = ys.flatten()
     zs = altitude[ys, xs] * (rows * 0.2)
-    colors = [color_lookup[merged[y, x]] for x, y in zip(xs, ys)]
+
+    forest_norm = flat[:, :, 0] / (flat[:, :, 0].max() + 1e-6)
+
+    colors = []
+    for x, y in zip(xs, ys):
+        if flat[y, x, 3] == 2.0:
+            colors.append(color_lookup['deep'])
+        elif flat[y, x, 3] == 1.0:
+            colors.append(color_lookup['shallow'])
+        elif flat[y, x, 2] > 0:
+            colors.append(color_lookup['roads'])
+        elif flat[y, x, 1] > 0:
+            colors.append(color_lookup['urban'])
+        elif flat[y, x, 0] > 0:
+            d = forest_norm[y, x]
+            colors.append([0.05 + d * 0.2, 0.25 + d * 0.4, 0.05])
+        else:
+            colors.append(color_lookup['bg'])
 
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(xs, ys, zs, c=colors, s=point_size, alpha=1.0)
     ax.set_box_aspect([1, 1, 0.1])
-
     ax.set_title('Merged Map with Altitude')
     ax.set_axis_off()
     plt.tight_layout()
@@ -254,18 +277,16 @@ def astar_road(height_map, urban_layer, start, road_layer, road_value=1):
     open_set = [(0, start)]
     came_from = {}
     g_score = {start: 0}
-    escaped_urban = False  # track when road has left the urban area
+    escaped_urban = False
 
     while open_set:
         _, current = heapq.heappop(open_set)
         x, y = current
 
-        # check if we've left the urban area yet
         if not escaped_urban and urban_layer[x, y] == 0:
             escaped_urban = True
 
         at_edge = current == end
-        # only terminate on urban hit after escaping
         at_urban = escaped_urban and urban_layer[x, y] > 0
 
         if at_edge or at_urban:
@@ -287,29 +308,28 @@ def astar_road(height_map, urban_layer, start, road_layer, road_value=1):
                 h = abs(nx - end[0]) + abs(ny - end[1])
                 heapq.heappush(open_set, (tentative_g + h, neighbor))
 
-def generate_roads(matrices, height_map, road_layer=3, num_roads=5):
-    # find distinct urban regions
-    labeled, num_features = label(matrices[:, :, 2] > 0)
-    
+def generate_roads(flat, altitude, road_layer=2, num_roads=5):
+    from scipy.ndimage import label
+    labeled, num_features = label(flat[:, :, 1] > 0)  # urban is layer 1
+
     if num_features == 0:
         return
 
-    # get centroid of each urban region
     centroids = []
     for i in range(1, num_features + 1):
         cells = list(zip(*np.where(labeled == i)))
-        centroid = cells[len(cells) // 2]  # middle cell as representative
-        centroids.append(centroid)
+        centroids.append(cells[len(cells) // 2])
 
-    # guarantee one road per city — connect each centroid to the next
+    # guaranteed connection per city
     for i in range(len(centroids) - 1):
-        astar_road(height_map, matrices[:, :, 2], centroids[i], matrices[:, :, road_layer])
+        astar_road(altitude, flat[:, :, 1], centroids[i], flat[:, :, road_layer])
 
-    # add extra roads from random urban cells for density
-    urban_cells = list(zip(*np.where(matrices[:, :, 2] > 0)))
-    extra = random.sample(urban_cells, min(num_roads, len(urban_cells)))
-    for start in extra:
-        astar_road(height_map, matrices[:, :, 2], start, matrices[:, :, road_layer])
+    # extra roads from random urban cells
+    urban_cells = list(zip(*np.where(flat[:, :, 1] > 0)))
+    if urban_cells:
+        extra = random.sample(urban_cells, min(num_roads, len(urban_cells)))
+        for start in extra:
+            astar_road(altitude, flat[:, :, 1], start, flat[:, :, road_layer])
 
 
 def add_deep_water(water_layer, depth_threshold=0.3):
@@ -366,63 +386,66 @@ def generate_water(height_map, water_coverage=0.3):
     return water
 
 
-def initialize_grid(x=100, y=100, urban_centers=1, iter=10, max_size=50, restarts=10, water_coverage=0.3, urban_size=200):
-    # categorical layers as strings
-    layers = {
-        'forest':  np.zeros((x, y), dtype=np.float32),
-        'urban':   np.zeros((x, y), dtype=np.float32),
-        'roads':   np.zeros((x, y), dtype=np.float32),
-        'water':   np.zeros((x, y), dtype=np.float32),
-    }
-    # continuous layer stays as float
+def initialize_grid(x=100, y=100, urban_centers=1, iter=10, max_size=50, forest_density=10, restarts=10, water_coverage=0.1, urban_size=20):
+    # categorical layers: 0=forest, 1=urban, 2=roads, 3=water
+    flat = np.zeros((x, y, 4), dtype=np.float32)
     altitude = np.zeros((x, y), dtype=np.float32)
     rng = np.random.default_rng()
 
     """altitude"""
-    altitude = assign_heights(layers['forest'], num_peaks=5, x_max=x, y_max=y)
+    altitude = assign_heights(flat[:, :, 0], num_peaks=5, x_max=x, y_max=y)
 
     """water"""
-    layers['water'] = generate_water(altitude, water_coverage=water_coverage)
-    layers['water'] = add_deep_water(layers['water'], depth_threshold=0.3)
+    flat[:, :, 3] = generate_water(altitude, water_coverage=water_coverage)
+    flat[:, :, 3] = add_deep_water(flat[:, :, 3], depth_threshold=0.3)
 
     """forest"""
-    for j in range(restarts):
+    for j in range(forest_density):
         point = tuple(rng.integers([0, 0], [x, y]))
-        if layers['water'][point[0], point[1]] > 0:
+        if flat[point[0], point[1], 3] > 0:
             continue
-        last_frontier = flood_fill_splotch(layers['forest'], point, target=0, fill_value=1, max_size=random.randint(10, max_size))
+        last_frontier = flood_fill_splotch(flat[:, :, 0], point, target=0, fill_value=1, max_size=random.randint(10, max_size))
         for i in range(1, iter):
             if len(last_frontier) == 0:
                 break
             next_start = random.choice(list(last_frontier))
-            last_frontier = flood_fill_splotch(layers['forest'], next_start, target=0, fill_value=1, max_size=random.randint(10, max_size))
-    layers['forest'] = np.where(layers['water'] > 0, 0.0, layers['forest'])
+            last_frontier = flood_fill_splotch(flat[:, :, 0], next_start, target=0, fill_value=1, max_size=random.randint(10, max_size))
+    flat[:, :, 0] = np.where(flat[:, :, 3] > 0, 0.0, flat[:, :, 0])
 
     """urban"""
-    for i in range(urban_centers):
-        urban_points = sample_lowland_points(altitude, layers['forest'], layers['water'], n=restarts, forest_penalty=0.1)
-        last_frontier = flood_fill_round(layers['urban'], tuple(urban_points[0]), target=0, fill_value=1, max_size=random.randint(urban_size // 2, urban_size), roundness=0.75)
+    for _ in range(urban_centers):
+        urban_points = sample_lowland_points(altitude, flat[:, :, 0], flat[:, :, 3], n=restarts, forest_penalty=0.1)
+        last_frontier = flood_fill_round(flat[:, :, 1], tuple(urban_points[0]), target=0, fill_value=1, max_size=random.randint(urban_size // 2, urban_size), roundness=0.75)
         for i, point in enumerate(urban_points[1:], start=1):
             if len(last_frontier) == 0:
                 break
             next_start = random.choice(list(last_frontier))
-            last_frontier = flood_fill_round(layers['urban'], next_start, target=0, fill_value=i+1, max_size=random.randint(urban_size // 2, urban_size), roundness=0.75)
-    layers['urban'] = np.where(layers['water'] > 0, 0.0, layers['urban'])
+            last_frontier = flood_fill_round(flat[:, :, 1], next_start, target=0, fill_value=i+1, max_size=random.randint(urban_size // 2, urban_size), roundness=0.75)
+    flat[:, :, 1] = np.where(flat[:, :, 3] > 0, 0.0, flat[:, :, 1])
 
     """roads"""
-    generate_roads(layers, altitude, road_layer='roads', num_roads=5)
-    layers['roads'] = np.where(layers['water'] > 0, 0.0, layers['roads'])
+    generate_roads(flat, altitude, road_layer=2, num_roads=5)
+    flat[:, :, 2] = np.where(flat[:, :, 3] > 0, 0.0, flat[:, :, 2])
 
-    draw_hatch(layers['urban'], layers['roads'], spacing=8, angle='cross')
-    render_merged(layers, altitude)
-    render_merged_3d_scatter(layers, altitude)
+    """hatching"""
+    draw_hatch(flat[:, :, 1], flat[:, :, 2], spacing=8, angle='cross')
 
-    return layers, altitude
+    render_merged(flat, altitude)
+    render_merged_3d_scatter(flat, altitude)
+
+    return flat, altitude
     
 
 
 if __name__ == "__main__":
-    initialize_grid(x = 100, y = 100, iter=200, max_size=200, restarts=20, forest_density=20, urban_centers=2, water_coverage=.2, urban_size=50)
+    terrain, altitude = initialize_grid(x = 100, y = 100, iter=200, max_size=200, restarts=20, forest_density=20, urban_centers=2, water_coverage=.2, urban_size=50)
+    np.savez("test_grid.npz", terrain = terrain, altitude=altitude)
+    print(os.path.abspath("test_grid.npz"))  # exact path it saved to
+    print(os.path.exists("test_grid.npz"))   # did it actually save
 
+    data = np.load("test_grid.npz")
+    print(data.files)
+    print("terrain sum:", data['terrain'].sum())
+    print("altitude sum:", data['altitude'].sum())
 
     
