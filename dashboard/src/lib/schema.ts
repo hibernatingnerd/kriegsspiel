@@ -2,11 +2,30 @@
 // All fields use snake_case to mirror the Python backend dataclasses.
 // Swap src/lib/mock-data.ts + API layer to connect a real backend — types stay stable.
 
-export type ScenarioStatus = 'setup' | 'running' | 'ended'
-export type SideLabel = 'blue' | 'red'
-export type ThreatTier = 'peer' | 'near_peer' | 'hybrid' | 'asymmetric'
-export type OutcomeLabel = 'blue_win' | 'red_win' | 'draw'
-export type AppPhase = 'setup' | 'run' | 'debrief'
+export type ScenarioStatus  = 'setup' | 'running' | 'ended'
+export type SideLabel       = 'blue' | 'red'
+export type ThreatTier      = 'peer' | 'near_peer' | 'hybrid' | 'asymmetric'
+export type OutcomeLabel    = 'blue_win' | 'red_win' | 'draw'
+export type AppPhase        = 'setup' | 'run' | 'debrief'
+export type ScenarioType    = 'LAND' | 'AMPHIBIOUS' | 'URBAN' | 'HYBRID'
+export type StrategicObjective = 'ANNIHILATION' | 'RESOURCE_CONTROL' | 'DECAPITATION'
+
+export interface ScenarioNodes {
+  blue_land_entry:  string
+  blue_sea_entry:   string
+  red_land_entry:   string
+  red_sea_entry:    string
+  contested_nodes:  string[]
+  objective_node:   string
+}
+
+export interface FactionResources {
+  dollars_millions:          number
+  income_per_turn_millions:  number
+  supply_chain:              number   // 0–100
+  stability:                 number   // 0–100
+  intel:                     number   // 0–100
+}
 
 // Open string so backends can add domain-specific keys freely
 export type DecisionKey = string
@@ -74,12 +93,17 @@ export interface Scenario {
   name: string
   classification: string
   threat_tier: ThreatTier
+  scenario_type: ScenarioType
+  strategic_objective: StrategicObjective
   summary: string
   timeline_hours: number
   turns_total: number
   location: Location
+  nodes: ScenarioNodes
   blue_force: Force
   red_force: Force
+  blue_resources: FactionResources
+  red_resources: FactionResources
   victory_conditions: VictoryConditions
   available_modifiers: Modifier[]
   active_modifier_keys: string[]
@@ -166,8 +190,4 @@ export interface GameState {
 export interface ScenarioConfig {
   base_scenario_id: string
   label_override: string
-  timeline_hours: number
-  active_modifier_keys: string[]
-  blue_force_strength: number   // 50–100
-  red_force_strength: number    // 50–100
 }

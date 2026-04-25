@@ -1,11 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import type { Scenario, ScenarioConfig } from '@/lib/schema'
+import type { Scenario, ScenarioConfig, Force } from '@/lib/schema'
 import { ALL_SCENARIOS } from '@/lib/mock-data'
 
 interface Props {
   onLaunch: (config: ScenarioConfig) => void
+}
+
+const TYPE_COLOR: Record<string, string> = {
+  LAND:        'var(--amber)',
+  AMPHIBIOUS:  'var(--blue)',
+  URBAN:       'var(--red)',
+  HYBRID:      'var(--accent)',
+}
+
+const OBJ_LABEL: Record<string, string> = {
+  ANNIHILATION:     'ANNIHILATION',
+  RESOURCE_CONTROL: 'RESOURCE CONTROL',
+  DECAPITATION:     'DECAPITATION',
 }
 
 const TIER_LABEL: Record<string, string> = {
@@ -15,186 +28,277 @@ const TIER_LABEL: Record<string, string> = {
   asymmetric: 'ASYMMETRIC',
 }
 
+function CpBar({ value, color }: { value: number; color: string }) {
+  return (
+    <div className="cp-bar-track" style={{ marginTop: 3 }}>
+      <div className="cp-bar-fill" style={{ width: `${value}%`, background: color }} />
+    </div>
+  )
+}
+
+function ResourceGrid({ label, res, color }: {
+  label: string
+  res: Scenario['blue_resources']
+  color: string
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: 10, color, letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
+      <div className="row" style={{ fontSize: 11, marginBottom: 3 }}>
+        <span className="dim">Budget</span>
+        <span style={{ color }}>${res.dollars_millions.toLocaleString()}M</span>
+      </div>
+      <div className="row" style={{ fontSize: 11, marginBottom: 3 }}>
+        <span className="dim">Income / turn</span>
+        <span>${res.income_per_turn_millions}M</span>
+      </div>
+      <div style={{ marginTop: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 2 }}>
+          <span className="dim">Supply Chain</span>
+          <span style={{ color, fontWeight: 600 }}>{res.supply_chain}</span>
+        </div>
+        <CpBar value={res.supply_chain} color={color} />
+      </div>
+      <div style={{ marginTop: 5 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 2 }}>
+          <span className="dim">Stability</span>
+          <span style={{ color: 'var(--green)', fontWeight: 600 }}>{res.stability}</span>
+        </div>
+        <CpBar value={res.stability} color="var(--green)" />
+      </div>
+      <div style={{ marginTop: 5 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 2 }}>
+          <span className="dim">Intel</span>
+          <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{res.intel}</span>
+        </div>
+        <CpBar value={res.intel} color="var(--accent)" />
+      </div>
+    </div>
+  )
+}
+
+function ForcePanel({ force, color }: { force: Force; color: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: 10, color, letterSpacing: '0.1em', marginBottom: 4 }}>{force.side.toUpperCase()}</div>
+      <div style={{ fontSize: 11, color, marginBottom: 4, fontWeight: 600 }}>{force.name}</div>
+      <div style={{ fontSize: 10, marginBottom: 6 }}>
+        <span className="dim">Starting CP: </span>
+        <span style={{ color, fontWeight: 600 }}>{force.combat_power}</span>
+        <span className="dim"> · {force.units.length} assets</span>
+      </div>
+      <CpBar value={force.combat_power} color={color} />
+      <div style={{ marginTop: 8 }}>
+        {force.units.map((u, i) => (
+          <div key={i} style={{ fontSize: 10, color: 'var(--dim)', marginBottom: 2 }}>
+            <span style={{ color: 'var(--dimmer)' }}>▸ </span>
+            {u.designation}
+            <span style={{ color: 'var(--dimmer)' }}> — {u.type}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function SetupView({ onLaunch }: Props) {
   const [selectedId, setSelectedId] = useState<string>(ALL_SCENARIOS[0].id)
-  const [label, setLabel] = useState('')
-  const [timelineHours, setTimelineHours] = useState(72)
-  const [activeModifiers, setActiveModifiers] = useState<Set<string>>(
-    new Set(ALL_SCENARIOS[0].active_modifier_keys)
-  )
-  const [blueStrength, setBlueStrength] = useState(100)
-  const [redStrength, setRedStrength] = useState(85)
+  const [label, setLabel]           = useState('')
 
-  const scenario = ALL_SCENARIOS.find((s) => s.id === selectedId)!
-
-  function selectScenario(s: Scenario) {
-    setSelectedId(s.id)
-    setTimelineHours(s.timeline_hours)
-    setActiveModifiers(new Set(s.active_modifier_keys))
-    setBlueStrength(100)
-    setRedStrength(s.red_force.combat_power)
-    setLabel('')
-  }
-
-  function toggleModifier(key: string) {
-    setActiveModifiers((prev) => {
-      const next = new Set(prev)
-      next.has(key) ? next.delete(key) : next.add(key)
-      return next
-    })
-  }
+  const scenario  = ALL_SCENARIOS.find((s) => s.id === selectedId)!
+  const typeColor = TYPE_COLOR[scenario.scenario_type] ?? 'var(--accent)'
 
   function handleLaunch() {
     onLaunch({
       base_scenario_id: selectedId,
-      label_override: label || scenario.name,
-      timeline_hours: timelineHours,
-      active_modifier_keys: [...activeModifiers],
-      blue_force_strength: blueStrength,
-      red_force_strength: redStrength,
+      label_override:   label.trim() || scenario.name,
     })
   }
 
   return (
-    <div>
-      <div className="grid-2" style={{ gap: 24, alignItems: 'start' }}>
+    <div className="grid-2" style={{ gap: 24, alignItems: 'start' }}>
 
-        {/* ── Left: scenario selector ── */}
-        <div>
-          <div className="label" style={{ marginBottom: 12 }}>Prefab Scenarios</div>
+      {/* ── Left: scenario selector ── */}
+      <div>
+        <div className="label" style={{ marginBottom: 12 }}>Starter Kit Scenarios</div>
 
-          {ALL_SCENARIOS.map((s) => (
+        {ALL_SCENARIOS.map((s) => {
+          const tc       = TYPE_COLOR[s.scenario_type] ?? 'var(--accent)'
+          const selected = s.id === selectedId
+          return (
             <div
               key={s.id}
-              className={`scenario-card${s.id === selectedId ? ' selected' : ''}`}
-              onClick={() => selectScenario(s)}
+              className={`scenario-card${selected ? ' selected' : ''}`}
+              onClick={() => { setSelectedId(s.id); setLabel('') }}
             >
-              {s.id === selectedId && <div className="selected-badge">SELECTED</div>}
-              <div className="sc-name accent">{s.name}</div>
-              <div className="sc-meta">
-                <span className="dim">{s.classification}</span>
-                <span style={{ margin: '0 8px', color: 'var(--border)' }}>·</span>
-                <span className="pill">{TIER_LABEL[s.threat_tier] ?? s.threat_tier}</span>
-                <span style={{ margin: '0 8px', color: 'var(--border)' }}>·</span>
-                <span className="dim">{s.location.name} · {s.timeline_hours}h · {s.turns_total} turns</span>
-              </div>
-              <div className="sc-summary">{s.summary.slice(0, 160)}…</div>
-            </div>
-          ))}
+              {selected && <div className="selected-badge">SELECTED</div>}
 
-          {/* Seed events */}
-          {scenario.seed_events.length > 0 && (
-            <div className="panel" style={{ marginTop: 16 }}>
-              <div className="panel-title">
-                Real-World Seed Events
-                <span className="pill live">● GDELT + ACLED</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div className="sc-name" style={{ color: tc }}>{s.name}</div>
+                <span className="pill" style={{ borderColor: tc, color: tc, fontSize: 9 }}>{s.scenario_type}</span>
+                <span className="pill" style={{ fontSize: 9 }}>{TIER_LABEL[s.threat_tier]}</span>
               </div>
-              {scenario.seed_events.map((e, i) => (
-                <div className="event-row" key={i}>
-                  <div><span className="date accent">{e.date}</span> · {e.description}</div>
-                  <div className="src dim">{e.source} · {e.source_id}</div>
+
+              <div style={{ display: 'flex', gap: 16, marginBottom: 6, fontSize: 10, color: 'var(--dim)' }}>
+                <span>{s.classification}</span>
+                <span>·</span>
+                <span>{s.turns_total} turns · {s.timeline_hours}h</span>
+                <span>·</span>
+                <span style={{ color: tc }}>OBJ: {OBJ_LABEL[s.strategic_objective]}</span>
+              </div>
+
+              <div className="sc-summary">{s.summary.slice(0, 160)}…</div>
+
+              <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 10 }}>
+                <span className="dim">
+                  OBJ: <span style={{ color: tc }}>{s.nodes.objective_node.split(' —')[0]}</span>
+                </span>
+                <span className="dim">
+                  <span className="blue">{s.blue_force.units.length} BLUE</span>
+                  {' · '}
+                  <span className="red">{s.red_force.units.length} RED</span>
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Right: scenario briefing (read-only) ── */}
+      <div>
+        <div className="label" style={{ marginBottom: 12 }}>Scenario Briefing</div>
+
+        {/* Header */}
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: typeColor, letterSpacing: '0.1em' }}>
+              {scenario.name}
+            </div>
+            <span className="pill" style={{ borderColor: typeColor, color: typeColor }}>{scenario.scenario_type}</span>
+            <span className="pill">{TIER_LABEL[scenario.threat_tier]}</span>
+            <span className="pill" style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--dimmer)' }}>
+              {scenario.classification}
+            </span>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--dim)', lineHeight: 1.6 }}>{scenario.summary}</div>
+          <div style={{ marginTop: 8, fontSize: 10, color: 'var(--dimmer)' }}>
+            {scenario.turns_total} turns · {scenario.timeline_hours}h · {scenario.location.region}
+          </div>
+        </div>
+
+        {/* Map nodes */}
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div className="panel-title">
+            Map Nodes
+            <span className="pill" style={{ borderColor: typeColor, color: typeColor, marginLeft: 8 }}>
+              {scenario.nodes.contested_nodes.length} contested
+            </span>
+          </div>
+
+          <div className="grid-2" style={{ gap: 12, marginBottom: 10 }}>
+            <div>
+              <div className="label" style={{ marginBottom: 4, fontSize: 9 }}>Entry Points</div>
+              {[
+                { label: 'BLUE land', val: scenario.nodes.blue_land_entry,  color: 'var(--blue)' },
+                { label: 'BLUE sea',  val: scenario.nodes.blue_sea_entry,   color: 'var(--blue)' },
+                { label: 'RED land',  val: scenario.nodes.red_land_entry,   color: 'var(--red)'  },
+                { label: 'RED sea',   val: scenario.nodes.red_sea_entry,    color: 'var(--red)'  },
+              ].map(({ label: l, val, color }) => (
+                <div key={l} className="row" style={{ fontSize: 11, marginBottom: 2 }}>
+                  <span style={{ color, fontSize: 9, letterSpacing: '0.06em' }}>{l}</span>
+                  <span className="dim">{val}</span>
                 </div>
               ))}
-              {scenario.seed_events.length === 0 && (
-                <div className="dim" style={{ fontSize: 11 }}>No seed events for this scenario</div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── Right: configuration ── */}
-        <div>
-          <div className="label" style={{ marginBottom: 12 }}>Configure</div>
-
-          <div className="panel" style={{ marginBottom: 16 }}>
-            <div className="panel-title">Scenario Label</div>
-            <input
-              type="text"
-              placeholder={scenario.name}
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-            />
-          </div>
-
-          <div className="panel" style={{ marginBottom: 16 }}>
-            <div className="panel-title">Timeline</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span className="dim" style={{ fontSize: 11 }}>24h</span>
-              <span className="accent">{timelineHours}h</span>
-              <span className="dim" style={{ fontSize: 11 }}>120h</span>
-            </div>
-            <input
-              type="range"
-              min={24}
-              max={120}
-              step={6}
-              value={timelineHours}
-              onChange={(e) => setTimelineHours(Number(e.target.value))}
-            />
-          </div>
-
-          <div className="panel" style={{ marginBottom: 16 }}>
-            <div className="panel-title">Modifiers</div>
-            {scenario.available_modifiers.map((m) => (
-              <label className="check-row" key={m.key}>
-                <input
-                  type="checkbox"
-                  checked={activeModifiers.has(m.key)}
-                  onChange={() => toggleModifier(m.key)}
-                />
-                <div style={{ flex: 1 }}>
-                  <div className="check-label">{m.label}</div>
-                  <div className="check-desc dim">{m.description}</div>
-                </div>
-              </label>
-            ))}
-          </div>
-
-          <div className="panel" style={{ marginBottom: 16 }}>
-            <div className="panel-title">Force Strength</div>
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span className="blue" style={{ fontSize: 11 }}>BLUE — {scenario.blue_force.name.slice(0, 30)}</span>
-                <span className="blue">{blueStrength}%</span>
-              </div>
-              <input
-                type="range" min={50} max={100} value={blueStrength}
-                onChange={(e) => setBlueStrength(Number(e.target.value))}
-              />
             </div>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span className="red" style={{ fontSize: 11 }}>RED — {scenario.red_force.name.slice(0, 30)}</span>
-                <span className="red">{redStrength}%</span>
-              </div>
-              <input
-                type="range" min={50} max={100} value={redStrength}
-                onChange={(e) => setRedStrength(Number(e.target.value))}
-              />
+              <div className="label" style={{ marginBottom: 4, fontSize: 9 }}>Contested Nodes</div>
+              {scenario.nodes.contested_nodes.map((n) => (
+                <div key={n} className="row" style={{ fontSize: 11, marginBottom: 2 }}>
+                  <span className="dim">▸ {n.split(' —')[0]}</span>
+                  {n.split(' —')[0] === scenario.nodes.objective_node.split(' —')[0] && (
+                    <span style={{ color: typeColor, fontSize: 9 }}>OBJECTIVE</span>
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
-
-          <div className="panel" style={{ marginBottom: 20 }}>
-            <div className="panel-title">Budget</div>
-            <div className="row">
-              <span className="dim">Package</span>
-              <span>{scenario.budget.label}</span>
-            </div>
-            <div className="row">
-              <span className="dim">Total</span>
-              <span className="accent">{scenario.budget.total} {scenario.budget.unit}</span>
-            </div>
-          </div>
-
-          <button className="btn-primary" style={{ width: '100%', fontSize: 14, padding: '12px 0' }} onClick={handleLaunch}>
-            GENERATE &amp; LAUNCH  ▸▸
-          </button>
-          <div className="small-meta" style={{ marginTop: 10, textAlign: 'center' }}>
-            Scenario will be generated by AI engine · check-ins every 6h real-time
           </div>
         </div>
 
+        {/* Forces */}
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div className="panel-title">Order of Battle</div>
+          <div className="grid-2" style={{ gap: 16 }}>
+            <ForcePanel force={scenario.blue_force} color="var(--blue)" />
+            <ForcePanel force={scenario.red_force}  color="var(--red)"  />
+          </div>
+        </div>
+
+        {/* Resources */}
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div className="panel-title">Opening Resources</div>
+          <div className="grid-2" style={{ gap: 16 }}>
+            <ResourceGrid label="BLUE" res={scenario.blue_resources} color="var(--blue)" />
+            <ResourceGrid label="RED"  res={scenario.red_resources}  color="var(--red)"  />
+          </div>
+        </div>
+
+        {/* Victory conditions */}
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div className="panel-title">Victory Conditions</div>
+          <div className="grid-2" style={{ gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '0.1em', marginBottom: 6 }}>BLUE WIN</div>
+              {scenario.victory_conditions.blue.map((c, i) => (
+                <div key={i} style={{ fontSize: 10, color: 'var(--blue)', marginBottom: 4, lineHeight: 1.5 }}>▸ {c}</div>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '0.1em', marginBottom: 6 }}>RED WIN</div>
+              {scenario.victory_conditions.red.map((c, i) => (
+                <div key={i} style={{ fontSize: 10, color: 'var(--red)', marginBottom: 4, lineHeight: 1.5 }}>▸ {c}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Active rules / modifiers (display-only) */}
+        {scenario.active_modifier_keys.length > 0 && (
+          <div className="panel" style={{ marginBottom: 14 }}>
+            <div className="panel-title">Active Rules</div>
+            {scenario.available_modifiers
+              .filter((m) => scenario.active_modifier_keys.includes(m.key))
+              .map((m) => (
+                <div key={m.key} style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, color: typeColor, marginBottom: 2 }}>{m.label}</div>
+                  <div style={{ fontSize: 10, color: 'var(--dim)' }}>{m.description}</div>
+                </div>
+              ))}
+          </div>
+        )}
+
+        {/* Run label + launch */}
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div className="panel-title">Run Label <span className="dim" style={{ fontWeight: 400 }}>(optional)</span></div>
+          <input
+            type="text"
+            placeholder={scenario.name}
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+          />
+        </div>
+
+        <button
+          className="btn-primary"
+          style={{ width: '100%', fontSize: 14, padding: '12px 0' }}
+          onClick={handleLaunch}
+        >
+          GENERATE &amp; LAUNCH  ▸▸
+        </button>
+        <div className="small-meta" style={{ marginTop: 10, textAlign: 'center' }}>
+          {scenario.turns_total}-turn run · 6h check-in cadence · claude-opus-4-7
+        </div>
       </div>
+
     </div>
   )
 }
