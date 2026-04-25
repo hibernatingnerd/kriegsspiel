@@ -1,0 +1,2255 @@
+{
+  "metadata": {
+    "version": "3.0",
+    "description": "Wargame unit library V3 — 50 units, 10 categories. Clean schema focused on functional game logic.",
+    "categories": ["AIR", "LIGHT_INFANTRY", "ARMOR", "TRANSPORT", "AIR_DEFENSE", "MARITIME_CARGO", "MARITIME_BATTLE", "SPECIAL", "ARTILLERY", "IRREGULAR"],
+    "affiliations": ["BLUE", "RED_RU", "RED_CN", "RED_IRR", "OPFOR"],
+    "maneuver_types": ["LAND", "AIR", "SEA", "SUBSURFACE", "AMPHIBIOUS", "CYBER"],
+    "damage_types": ["KINETIC", "EW", "CYBER"],
+    "area_effects": ["SINGLE_TARGET", "AREA"],
+    "cyber_effects": ["INTEL_REVEAL", "SPEED_REDUCTION", "COST_INCREASE", "SENSOR_BLIND"],
+    "reveal_quality": ["PRESENCE", "POSITION", "IDENTITY", "FULL_PROFILE"],
+    "transport_note": "Units with transport_dependent:true cannot redeploy strategically without a TRANSPORT or MARITIME_CARGO asset.",
+    "schema_notes": "power = aggregate damage output per action. magazine_depth = total attack actions before reload. move cost for CYBER units represents compute/analyst resource burn, never zero."
+  },
+
+  "units": [
+
+    // ==========================================
+    // CATEGORY 1: AIR (5)
+    // ==========================================
+
+    {
+      "id": "AIR-001",
+      "name": "F-35A Strike Wing",
+      "category": "AIR",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 180,
+        "activation_millions": 12,
+        "upkeep_per_turn_millions": 0.8,
+        "move_per_turn_millions": 1.2,
+        "attack_millions": 2.5,
+        "recon_millions": 1.0,
+        "reload_millions": 4.0,
+        "rebuild_millions": 200
+      },
+      "maneuver": {
+        "type": "AIR",
+        "terrain_constraints": "Requires AIRFIELD or CARRIER node at start and end. Cannot occupy LAND or SEA nodes.",
+        "speed_per_turn_km": 800,
+        "operational_radius_km": 1200
+      },
+      "attack": {
+        "range_km": 300,
+        "power": 92,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 4,
+        "reload_turns": 2,
+        "reload_cost_millions": 4.0
+      },
+      "detect": {
+        "sensor_range_km": 200,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 35,
+        "signature": "LOW",
+        "max_hits": 2,
+        "regen_per_turn": 15
+      }
+    },
+
+    {
+      "id": "AIR-002",
+      "name": "J-20 Stealth Squadron",
+      "category": "AIR",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 120,
+        "activation_millions": 10,
+        "upkeep_per_turn_millions": 0.7,
+        "move_per_turn_millions": 1.0,
+        "attack_millions": 2.2,
+        "recon_millions": 0.9,
+        "reload_millions": 3.5,
+        "rebuild_millions": 140
+      },
+      "maneuver": {
+        "type": "AIR",
+        "terrain_constraints": "Requires AIRFIELD node at start and end.",
+        "speed_per_turn_km": 750,
+        "operational_radius_km": 1100
+      },
+      "attack": {
+        "range_km": 250,
+        "power": 88,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 3,
+        "reload_turns": 2,
+        "reload_cost_millions": 3.5
+      },
+      "detect": {
+        "sensor_range_km": 180,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 32,
+        "signature": "LOW",
+        "max_hits": 2,
+        "regen_per_turn": 12
+      }
+    },
+
+    {
+      "id": "AIR-003",
+      "name": "Su-35S Fighter Regiment",
+      "category": "AIR",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 85,
+        "activation_millions": 7,
+        "upkeep_per_turn_millions": 0.5,
+        "move_per_turn_millions": 0.8,
+        "attack_millions": 1.8,
+        "recon_millions": 0.7,
+        "reload_millions": 2.5,
+        "rebuild_millions": 100
+      },
+      "maneuver": {
+        "type": "AIR",
+        "terrain_constraints": "Requires AIRFIELD node at start and end.",
+        "speed_per_turn_km": 700,
+        "operational_radius_km": 1600
+      },
+      "attack": {
+        "range_km": 200,
+        "power": 80,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 4,
+        "reload_turns": 2,
+        "reload_cost_millions": 2.5
+      },
+      "detect": {
+        "sensor_range_km": 150,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 30,
+        "signature": "MEDIUM",
+        "max_hits": 2,
+        "regen_per_turn": 12
+      }
+    },
+
+    {
+      "id": "AIR-004",
+      "name": "AH-64E Apache Battalion",
+      "category": "AIR",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 55,
+        "activation_millions": 4,
+        "upkeep_per_turn_millions": 0.3,
+        "move_per_turn_millions": 0.4,
+        "attack_millions": 1.2,
+        "recon_millions": 0.5,
+        "reload_millions": 1.8,
+        "rebuild_millions": 65
+      },
+      "maneuver": {
+        "type": "AIR",
+        "terrain_constraints": "Requires FARP or AIRFIELD for rearm. Cannot cross open ocean. Short-range rotary.",
+        "speed_per_turn_km": 240,
+        "operational_radius_km": 480
+      },
+      "attack": {
+        "range_km": 8,
+        "power": 82,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 4,
+        "reload_turns": 1,
+        "reload_cost_millions": 1.8
+      },
+      "detect": {
+        "sensor_range_km": 30,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 40,
+        "signature": "MEDIUM",
+        "max_hits": 3,
+        "regen_per_turn": 20
+      }
+    },
+
+    {
+      "id": "AIR-005",
+      "name": "Shahed-136 Drone Swarm",
+      "category": "AIR",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 2,
+        "activation_millions": 0.2,
+        "upkeep_per_turn_millions": 0.05,
+        "move_per_turn_millions": 0.05,
+        "attack_millions": 0.3,
+        "recon_millions": 0.1,
+        "reload_millions": 1.5,
+        "rebuild_millions": 2
+      },
+      "maneuver": {
+        "type": "AIR",
+        "terrain_constraints": "One-way attack profile. Launched from LAND node. No return or recovery.",
+        "speed_per_turn_km": 180,
+        "operational_radius_km": 2500
+      },
+      "attack": {
+        "range_km": 2500,
+        "power": 55,
+        "damage_type": "KINETIC",
+        "area_effect": "AREA",
+        "magazine_depth": 5,
+        "reload_turns": 4,
+        "reload_cost_millions": 1.5
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 5,
+        "signature": "LOW",
+        "max_hits": 1,
+        "regen_per_turn": 0
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 2: LIGHT INFANTRY (5)
+    // ==========================================
+
+    {
+      "id": "LI-001",
+      "name": "US Ranger Battalion",
+      "category": "LIGHT_INFANTRY",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.4,
+        "activation_millions": 0.1,
+        "upkeep_per_turn_millions": 0.05,
+        "move_per_turn_millions": 0.05,
+        "attack_millions": 0.2,
+        "recon_millions": 0.1,
+        "reload_millions": 0.3,
+        "rebuild_millions": 0.5
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Air insert capable with TRANSPORT asset.",
+        "speed_per_turn_km": 40,
+        "operational_radius_km": 200
+      },
+      "attack": {
+        "range_km": 3,
+        "power": 72,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 6,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.3
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 20,
+        "signature": "VERY_LOW",
+        "max_hits": 4,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "LI-002",
+      "name": "Iranian Quds Force Brigade",
+      "category": "LIGHT_INFANTRY",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.2,
+        "activation_millions": 0.05,
+        "upkeep_per_turn_millions": 0.02,
+        "move_per_turn_millions": 0.02,
+        "attack_millions": 0.1,
+        "recon_millions": 0.05,
+        "reload_millions": 0.15,
+        "rebuild_millions": 0.25
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Excels in urban and mountainous terrain.",
+        "speed_per_turn_km": 30,
+        "operational_radius_km": 150
+      },
+      "attack": {
+        "range_km": 2,
+        "power": 58,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 5,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.15
+      },
+      "detect": {
+        "sensor_range_km": 3,
+        "reveal_quality": "POSITION",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 15,
+        "signature": "LOW",
+        "max_hits": 5,
+        "regen_per_turn": 12
+      }
+    },
+
+    {
+      "id": "LI-003",
+      "name": "PLA Marine Regiment",
+      "category": "LIGHT_INFANTRY",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.5,
+        "activation_millions": 0.1,
+        "upkeep_per_turn_millions": 0.04,
+        "move_per_turn_millions": 0.04,
+        "attack_millions": 0.2,
+        "recon_millions": 0.08,
+        "reload_millions": 0.25,
+        "rebuild_millions": 0.6
+      },
+      "maneuver": {
+        "type": "AMPHIBIOUS",
+        "terrain_constraints": "LAND and LITTORAL nodes. Requires MARITIME_CARGO for open ocean transit.",
+        "speed_per_turn_km": 35,
+        "operational_radius_km": 180
+      },
+      "attack": {
+        "range_km": 4,
+        "power": 68,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 5,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.25
+      },
+      "detect": {
+        "sensor_range_km": 6,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 22,
+        "signature": "LOW",
+        "max_hits": 4,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "LI-004",
+      "name": "Russian VDV Airborne Battalion",
+      "category": "LIGHT_INFANTRY",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.3,
+        "activation_millions": 0.08,
+        "upkeep_per_turn_millions": 0.03,
+        "move_per_turn_millions": 0.03,
+        "attack_millions": 0.15,
+        "recon_millions": 0.06,
+        "reload_millions": 0.2,
+        "rebuild_millions": 0.4
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Air insert via TRANSPORT asset.",
+        "speed_per_turn_km": 35,
+        "operational_radius_km": 160
+      },
+      "attack": {
+        "range_km": 3,
+        "power": 65,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 5,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.2
+      },
+      "detect": {
+        "sensor_range_km": 4,
+        "reveal_quality": "POSITION",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 18,
+        "signature": "LOW",
+        "max_hits": 4,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "LI-005",
+      "name": "US Marine Rifle Battalion",
+      "category": "LIGHT_INFANTRY",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.5,
+        "activation_millions": 0.1,
+        "upkeep_per_turn_millions": 0.04,
+        "move_per_turn_millions": 0.04,
+        "attack_millions": 0.18,
+        "recon_millions": 0.08,
+        "reload_millions": 0.25,
+        "rebuild_millions": 0.6
+      },
+      "maneuver": {
+        "type": "AMPHIBIOUS",
+        "terrain_constraints": "LAND and LITTORAL nodes. Amphibious assault capable with ARG.",
+        "speed_per_turn_km": 38,
+        "operational_radius_km": 180
+      },
+      "attack": {
+        "range_km": 4,
+        "power": 70,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 5,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.25
+      },
+      "detect": {
+        "sensor_range_km": 6,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 22,
+        "signature": "LOW",
+        "max_hits": 4,
+        "regen_per_turn": 10
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 3: ARMOR (5)
+    // ==========================================
+
+    {
+      "id": "ARM-001",
+      "name": "US Armored Brigade Combat Team",
+      "category": "ARMOR",
+      "affiliation": "BLUE",
+      "transport_dependent": true,
+      "cost": {
+        "creation_millions": 2100,
+        "activation_millions": 15,
+        "upkeep_per_turn_millions": 1.2,
+        "move_per_turn_millions": 2.0,
+        "attack_millions": 1.5,
+        "recon_millions": 0.4,
+        "reload_millions": 3.0,
+        "rebuild_millions": 2500
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Severe penalty in SWAMP/JUNGLE. Requires TRANSPORT for strategic deployment.",
+        "speed_per_turn_km": 65,
+        "operational_radius_km": 300
+      },
+      "attack": {
+        "range_km": 4,
+        "power": 92,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 12,
+        "reload_turns": 2,
+        "reload_cost_millions": 3.0
+      },
+      "detect": {
+        "sensor_range_km": 15,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 88,
+        "signature": "VERY_HIGH",
+        "max_hits": 6,
+        "regen_per_turn": 8
+      }
+    },
+
+    {
+      "id": "ARM-002",
+      "name": "Russian BTG (T-90M)",
+      "category": "ARMOR",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 600,
+        "activation_millions": 5,
+        "upkeep_per_turn_millions": 0.6,
+        "move_per_turn_millions": 1.0,
+        "attack_millions": 0.8,
+        "recon_millions": 0.2,
+        "reload_millions": 1.5,
+        "rebuild_millions": 700
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Optimized for open steppe and plains.",
+        "speed_per_turn_km": 60,
+        "operational_radius_km": 200
+      },
+      "attack": {
+        "range_km": 4,
+        "power": 78,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 8,
+        "reload_turns": 2,
+        "reload_cost_millions": 1.5
+      },
+      "detect": {
+        "sensor_range_km": 12,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 75,
+        "signature": "HIGH",
+        "max_hits": 5,
+        "regen_per_turn": 8
+      }
+    },
+
+    {
+      "id": "ARM-003",
+      "name": "PLA Combined Arms Brigade",
+      "category": "ARMOR",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 1200,
+        "activation_millions": 10,
+        "upkeep_per_turn_millions": 0.9,
+        "move_per_turn_millions": 1.4,
+        "attack_millions": 1.1,
+        "recon_millions": 0.3,
+        "reload_millions": 2.0,
+        "rebuild_millions": 1400
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes.",
+        "speed_per_turn_km": 55,
+        "operational_radius_km": 280
+      },
+      "attack": {
+        "range_km": 4,
+        "power": 82,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 10,
+        "reload_turns": 2,
+        "reload_cost_millions": 2.0
+      },
+      "detect": {
+        "sensor_range_km": 14,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 80,
+        "signature": "HIGH",
+        "max_hits": 6,
+        "regen_per_turn": 8
+      }
+    },
+
+    {
+      "id": "ARM-004",
+      "name": "Israeli Merkava Mk4 Battalion",
+      "category": "ARMOR",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 1800,
+        "activation_millions": 12,
+        "upkeep_per_turn_millions": 1.0,
+        "move_per_turn_millions": 1.6,
+        "attack_millions": 1.3,
+        "recon_millions": 0.35,
+        "reload_millions": 2.5,
+        "rebuild_millions": 2000
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Excels in mixed and urban terrain.",
+        "speed_per_turn_km": 55,
+        "operational_radius_km": 250
+      },
+      "attack": {
+        "range_km": 4,
+        "power": 88,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 10,
+        "reload_turns": 2,
+        "reload_cost_millions": 2.5
+      },
+      "detect": {
+        "sensor_range_km": 14,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 92,
+        "signature": "HIGH",
+        "max_hits": 7,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "ARM-005",
+      "name": "Iranian Zulfiqar Armored Brigade",
+      "category": "ARMOR",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 400,
+        "activation_millions": 3,
+        "upkeep_per_turn_millions": 0.3,
+        "move_per_turn_millions": 0.5,
+        "attack_millions": 0.4,
+        "recon_millions": 0.1,
+        "reload_millions": 0.8,
+        "rebuild_millions": 450
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Degraded performance in mountainous terrain.",
+        "speed_per_turn_km": 45,
+        "operational_radius_km": 180
+      },
+      "attack": {
+        "range_km": 3,
+        "power": 60,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 6,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.8
+      },
+      "detect": {
+        "sensor_range_km": 8,
+        "reveal_quality": "POSITION",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 58,
+        "signature": "HIGH",
+        "max_hits": 4,
+        "regen_per_turn": 6
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 4: TRANSPORT (5)
+    // ==========================================
+
+    {
+      "id": "TRN-001",
+      "name": "C-17 Strategic Airlift Squadron",
+      "category": "TRANSPORT",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "carries": ["LIGHT_INFANTRY", "ARTILLERY", "AIR_DEFENSE", "SPECIAL", "IRREGULAR"],
+      "cargo_tons": 77,
+      "cost": {
+        "creation_millions": 218,
+        "activation_millions": 8,
+        "upkeep_per_turn_millions": 0.5,
+        "move_per_turn_millions": 1.5,
+        "attack_millions": 0,
+        "recon_millions": 0,
+        "reload_millions": 0,
+        "rebuild_millions": 250
+      },
+      "maneuver": {
+        "type": "AIR",
+        "terrain_constraints": "Requires AIRFIELD at origin and destination. No combat node entry without escort.",
+        "speed_per_turn_km": 900,
+        "operational_radius_km": 10000
+      },
+      "attack": null,
+      "detect": {
+        "sensor_range_km": 20,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 10,
+        "signature": "VERY_HIGH",
+        "max_hits": 1,
+        "regen_per_turn": 20
+      }
+    },
+
+    {
+      "id": "TRN-002",
+      "name": "CH-47F Chinook Company",
+      "category": "TRANSPORT",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "carries": ["LIGHT_INFANTRY", "SPECIAL", "IRREGULAR"],
+      "cargo_tons": 11,
+      "cost": {
+        "creation_millions": 38,
+        "activation_millions": 2,
+        "upkeep_per_turn_millions": 0.2,
+        "move_per_turn_millions": 0.3,
+        "attack_millions": 0,
+        "recon_millions": 0,
+        "reload_millions": 0,
+        "rebuild_millions": 45
+      },
+      "maneuver": {
+        "type": "AIR",
+        "terrain_constraints": "Requires FARP or FOB within operational radius. Can land any clear terrain.",
+        "speed_per_turn_km": 260,
+        "operational_radius_km": 370
+      },
+      "attack": null,
+      "detect": {
+        "sensor_range_km": 10,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 15,
+        "signature": "HIGH",
+        "max_hits": 1,
+        "regen_per_turn": 25
+      }
+    },
+
+    {
+      "id": "TRN-003",
+      "name": "Russian IL-76 Airlift Regiment",
+      "category": "TRANSPORT",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "carries": ["LIGHT_INFANTRY", "ARTILLERY", "AIR_DEFENSE"],
+      "cargo_tons": 47,
+      "cost": {
+        "creation_millions": 35,
+        "activation_millions": 3,
+        "upkeep_per_turn_millions": 0.3,
+        "move_per_turn_millions": 0.8,
+        "attack_millions": 0,
+        "recon_millions": 0,
+        "reload_millions": 0,
+        "rebuild_millions": 40
+      },
+      "maneuver": {
+        "type": "AIR",
+        "terrain_constraints": "Requires AIRFIELD at origin and destination.",
+        "speed_per_turn_km": 780,
+        "operational_radius_km": 6500
+      },
+      "attack": null,
+      "detect": {
+        "sensor_range_km": 15,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 8,
+        "signature": "VERY_HIGH",
+        "max_hits": 1,
+        "regen_per_turn": 20
+      }
+    },
+
+    {
+      "id": "TRN-004",
+      "name": "US LMSR Strategic Cargo Ship",
+      "category": "TRANSPORT",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "carries": ["ARMOR", "ARTILLERY", "AIR_DEFENSE"],
+      "cargo_tons": 22000,
+      "cost": {
+        "creation_millions": 320,
+        "activation_millions": 5,
+        "upkeep_per_turn_millions": 0.4,
+        "move_per_turn_millions": 0.6,
+        "attack_millions": 0,
+        "recon_millions": 0,
+        "reload_millions": 0,
+        "rebuild_millions": 380
+      },
+      "maneuver": {
+        "type": "SEA",
+        "terrain_constraints": "SEA and LITTORAL nodes only. Requires PORT to load and offload.",
+        "speed_per_turn_km": 55,
+        "operational_radius_km": 12000
+      },
+      "attack": null,
+      "detect": {
+        "sensor_range_km": 25,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 12,
+        "signature": "VERY_HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "TRN-005",
+      "name": "PLA Type 072 LST",
+      "category": "TRANSPORT",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "carries": ["ARMOR", "LIGHT_INFANTRY", "ARTILLERY"],
+      "cargo_tons": 2000,
+      "cost": {
+        "creation_millions": 45,
+        "activation_millions": 2,
+        "upkeep_per_turn_millions": 0.15,
+        "move_per_turn_millions": 0.2,
+        "attack_millions": 0,
+        "recon_millions": 0,
+        "reload_millions": 0,
+        "rebuild_millions": 55
+      },
+      "maneuver": {
+        "type": "AMPHIBIOUS",
+        "terrain_constraints": "SEA and LITTORAL nodes. Beach landing capable — no PORT required.",
+        "speed_per_turn_km": 35,
+        "operational_radius_km": 3000
+      },
+      "attack": null,
+      "detect": {
+        "sensor_range_km": 15,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 10,
+        "signature": "HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 8
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 5: AIR DEFENSE (5)
+    // ==========================================
+
+    {
+      "id": "AD-001",
+      "name": "THAAD Battery",
+      "category": "AIR_DEFENSE",
+      "affiliation": "BLUE",
+      "transport_dependent": true,
+      "cost": {
+        "creation_millions": 800,
+        "activation_millions": 20,
+        "upkeep_per_turn_millions": 1.5,
+        "move_per_turn_millions": 3.0,
+        "attack_millions": 8.0,
+        "recon_millions": 0.5,
+        "reload_millions": 80.0,
+        "rebuild_millions": 900
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "LAND nodes only. Requires open terrain for radar. Requires TRANSPORT for strategic deployment.",
+        "speed_per_turn_km": 25,
+        "operational_radius_km": 100
+      },
+      "attack": {
+        "range_km": 200,
+        "power": 88,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "intercept_pk": 0.85,
+        "target_types": ["AIR", "MISSILE"],
+        "magazine_depth": 24,
+        "reload_turns": 6,
+        "reload_cost_millions": 80.0
+      },
+      "detect": {
+        "sensor_range_km": 1000,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 30,
+        "signature": "HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "AD-002",
+      "name": "Patriot PAC-3 MSE Battery",
+      "category": "AIR_DEFENSE",
+      "affiliation": "BLUE",
+      "transport_dependent": true,
+      "cost": {
+        "creation_millions": 400,
+        "activation_millions": 10,
+        "upkeep_per_turn_millions": 0.8,
+        "move_per_turn_millions": 1.5,
+        "attack_millions": 4.0,
+        "recon_millions": 0.3,
+        "reload_millions": 40.0,
+        "rebuild_millions": 450
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "LAND nodes only. Requires 1 turn setup after movement.",
+        "speed_per_turn_km": 30,
+        "operational_radius_km": 120
+      },
+      "attack": {
+        "range_km": 60,
+        "power": 82,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "intercept_pk": 0.80,
+        "target_types": ["AIR", "MISSILE"],
+        "magazine_depth": 24,
+        "reload_turns": 4,
+        "reload_cost_millions": 40.0
+      },
+      "detect": {
+        "sensor_range_km": 300,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 25,
+        "signature": "HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "AD-003",
+      "name": "S-400 Triumf Regiment",
+      "category": "AIR_DEFENSE",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 500,
+        "activation_millions": 12,
+        "upkeep_per_turn_millions": 1.0,
+        "move_per_turn_millions": 2.0,
+        "attack_millions": 5.0,
+        "recon_millions": 0.4,
+        "reload_millions": 50.0,
+        "rebuild_millions": 580
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "LAND nodes only. Requires 1 turn setup after movement.",
+        "speed_per_turn_km": 35,
+        "operational_radius_km": 150
+      },
+      "attack": {
+        "range_km": 400,
+        "power": 85,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "intercept_pk": 0.78,
+        "target_types": ["AIR", "MISSILE", "STEALTH"],
+        "magazine_depth": 16,
+        "reload_turns": 4,
+        "reload_cost_millions": 50.0
+      },
+      "detect": {
+        "sensor_range_km": 600,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 28,
+        "signature": "HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "AD-004",
+      "name": "HQ-9B Battery",
+      "category": "AIR_DEFENSE",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 300,
+        "activation_millions": 8,
+        "upkeep_per_turn_millions": 0.7,
+        "move_per_turn_millions": 1.5,
+        "attack_millions": 3.5,
+        "recon_millions": 0.3,
+        "reload_millions": 35.0,
+        "rebuild_millions": 350
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "LAND nodes only. Requires 1 turn setup after movement.",
+        "speed_per_turn_km": 30,
+        "operational_radius_km": 120
+      },
+      "attack": {
+        "range_km": 200,
+        "power": 78,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "intercept_pk": 0.72,
+        "target_types": ["AIR", "MISSILE"],
+        "magazine_depth": 12,
+        "reload_turns": 4,
+        "reload_cost_millions": 35.0
+      },
+      "detect": {
+        "sensor_range_km": 400,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 25,
+        "signature": "HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "AD-005",
+      "name": "Iranian Bavar-373 Battery",
+      "category": "AIR_DEFENSE",
+      "affiliation": "RED_IRR",
+      "transport_dependent": true,
+      "cost": {
+        "creation_millions": 120,
+        "activation_millions": 4,
+        "upkeep_per_turn_millions": 0.3,
+        "move_per_turn_millions": 0.8,
+        "attack_millions": 2.0,
+        "recon_millions": 0.2,
+        "reload_millions": 15.0,
+        "rebuild_millions": 140
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "LAND nodes only. Requires 2 turns setup after movement.",
+        "speed_per_turn_km": 20,
+        "operational_radius_km": 80
+      },
+      "attack": {
+        "range_km": 200,
+        "power": 60,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "intercept_pk": 0.55,
+        "target_types": ["AIR", "MISSILE"],
+        "magazine_depth": 12,
+        "reload_turns": 6,
+        "reload_cost_millions": 15.0
+      },
+      "detect": {
+        "sensor_range_km": 300,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 20,
+        "signature": "HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 4
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 6: MARITIME CARGO (5)
+    // ==========================================
+
+    {
+      "id": "MCG-001",
+      "name": "T-AKE Combat Logistics Ship",
+      "category": "MARITIME_CARGO",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "carries": ["SUPPLIES", "AMMUNITION", "FUEL"],
+      "cargo_tons": 10000,
+      "cost": {
+        "creation_millions": 580,
+        "activation_millions": 6,
+        "upkeep_per_turn_millions": 0.4,
+        "move_per_turn_millions": 0.5,
+        "attack_millions": 0,
+        "recon_millions": 0,
+        "reload_millions": 0,
+        "rebuild_millions": 650
+      },
+      "maneuver": {
+        "type": "SEA",
+        "terrain_constraints": "SEA and LITTORAL nodes. Underway replenishment capable — no PORT required.",
+        "speed_per_turn_km": 50,
+        "operational_radius_km": 14000
+      },
+      "attack": null,
+      "detect": {
+        "sensor_range_km": 20,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 8,
+        "signature": "VERY_HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "MCG-002",
+      "name": "LMSR Vehicle Cargo Ship",
+      "category": "MARITIME_CARGO",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "carries": ["ARMOR", "ARTILLERY", "VEHICLES"],
+      "cargo_tons": 22000,
+      "cost": {
+        "creation_millions": 320,
+        "activation_millions": 5,
+        "upkeep_per_turn_millions": 0.35,
+        "move_per_turn_millions": 0.5,
+        "attack_millions": 0,
+        "recon_millions": 0,
+        "reload_millions": 0,
+        "rebuild_millions": 380
+      },
+      "maneuver": {
+        "type": "SEA",
+        "terrain_constraints": "SEA nodes only. Requires PORT to load and offload. Cannot beach land.",
+        "speed_per_turn_km": 60,
+        "operational_radius_km": 14000
+      },
+      "attack": null,
+      "detect": {
+        "sensor_range_km": 20,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 8,
+        "signature": "VERY_HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "MCG-003",
+      "name": "Russian Ropucha LST",
+      "category": "MARITIME_CARGO",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "carries": ["LIGHT_INFANTRY", "ARMOR", "ARTILLERY"],
+      "cargo_tons": 1000,
+      "cost": {
+        "creation_millions": 40,
+        "activation_millions": 2,
+        "upkeep_per_turn_millions": 0.1,
+        "move_per_turn_millions": 0.15,
+        "attack_millions": 0.3,
+        "recon_millions": 0,
+        "reload_millions": 0.5,
+        "rebuild_millions": 50
+      },
+      "maneuver": {
+        "type": "AMPHIBIOUS",
+        "terrain_constraints": "SEA and LITTORAL. Beach landing capable.",
+        "speed_per_turn_km": 40,
+        "operational_radius_km": 6000
+      },
+      "attack": {
+        "range_km": 5,
+        "power": 25,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 5,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.5
+      },
+      "detect": {
+        "sensor_range_km": 15,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 10,
+        "signature": "HIGH",
+        "max_hits": 2,
+        "regen_per_turn": 8
+      }
+    },
+
+    {
+      "id": "MCG-004",
+      "name": "PLA Type 071 LPD",
+      "category": "MARITIME_CARGO",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "carries": ["LIGHT_INFANTRY", "ARMOR", "ARTILLERY", "HELICOPTERS"],
+      "cargo_tons": 4000,
+      "cost": {
+        "creation_millions": 350,
+        "activation_millions": 6,
+        "upkeep_per_turn_millions": 0.3,
+        "move_per_turn_millions": 0.4,
+        "attack_millions": 0.8,
+        "recon_millions": 0.2,
+        "reload_millions": 1.0,
+        "rebuild_millions": 400
+      },
+      "maneuver": {
+        "type": "AMPHIBIOUS",
+        "terrain_constraints": "SEA and LITTORAL. Helo deck enables air insert of carried light forces.",
+        "speed_per_turn_km": 50,
+        "operational_radius_km": 8000
+      },
+      "attack": {
+        "range_km": 8,
+        "power": 35,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 6,
+        "reload_turns": 2,
+        "reload_cost_millions": 1.0
+      },
+      "detect": {
+        "sensor_range_km": 30,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 20,
+        "signature": "VERY_HIGH",
+        "max_hits": 3,
+        "regen_per_turn": 6
+      }
+    },
+
+    {
+      "id": "MCG-005",
+      "name": "IRGC Fast Logistics Dhow Fleet",
+      "category": "MARITIME_CARGO",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "carries": ["LIGHT_INFANTRY", "SUPPLIES", "MISSILES"],
+      "cargo_tons": 200,
+      "cost": {
+        "creation_millions": 1,
+        "activation_millions": 0.1,
+        "upkeep_per_turn_millions": 0.02,
+        "move_per_turn_millions": 0.02,
+        "attack_millions": 0.1,
+        "recon_millions": 0.02,
+        "reload_millions": 0.1,
+        "rebuild_millions": 1.2
+      },
+      "maneuver": {
+        "type": "SEA",
+        "terrain_constraints": "SEA and LITTORAL. Operates in shallow coastal waters denied to larger vessels.",
+        "speed_per_turn_km": 30,
+        "operational_radius_km": 1500
+      },
+      "attack": {
+        "range_km": 2,
+        "power": 20,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 3,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.1
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 5,
+        "signature": "LOW",
+        "max_hits": 1,
+        "regen_per_turn": 15
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 7: MARITIME BATTLE (5)
+    // ==========================================
+
+    {
+      "id": "MBT-001",
+      "name": "Arleigh Burke DDG",
+      "category": "MARITIME_BATTLE",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 1800,
+        "activation_millions": 20,
+        "upkeep_per_turn_millions": 1.2,
+        "move_per_turn_millions": 1.5,
+        "attack_millions": 3.0,
+        "recon_millions": 0.5,
+        "reload_millions": 30.0,
+        "rebuild_millions": 2000
+      },
+      "maneuver": {
+        "type": "SEA",
+        "terrain_constraints": "SEA and LITTORAL nodes only.",
+        "speed_per_turn_km": 120,
+        "operational_radius_km": 8000
+      },
+      "attack": {
+        "range_km": 1600,
+        "power": 85,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 24,
+        "reload_turns": 4,
+        "reload_cost_millions": 30.0
+      },
+      "detect": {
+        "sensor_range_km": 500,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 55,
+        "signature": "HIGH",
+        "max_hits": 4,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "MBT-002",
+      "name": "Virginia-class SSN",
+      "category": "MARITIME_BATTLE",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 3400,
+        "activation_millions": 25,
+        "upkeep_per_turn_millions": 1.5,
+        "move_per_turn_millions": 0.8,
+        "attack_millions": 5.0,
+        "recon_millions": 0.3,
+        "reload_millions": 50.0,
+        "rebuild_millions": 3800
+      },
+      "maneuver": {
+        "type": "SUBSURFACE",
+        "terrain_constraints": "SUBSURFACE and deep SEA nodes. Cannot enter LITTORAL shallows. Requires PORT for reload.",
+        "speed_per_turn_km": 100,
+        "operational_radius_km": 20000
+      },
+      "attack": {
+        "range_km": 1800,
+        "power": 95,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 19,
+        "reload_turns": 8,
+        "reload_cost_millions": 50.0
+      },
+      "detect": {
+        "sensor_range_km": 200,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 45,
+        "signature": "VERY_LOW",
+        "max_hits": 2,
+        "regen_per_turn": 3
+      }
+    },
+
+    {
+      "id": "MBT-003",
+      "name": "PLA Type 055 Destroyer",
+      "category": "MARITIME_BATTLE",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 1200,
+        "activation_millions": 15,
+        "upkeep_per_turn_millions": 1.0,
+        "move_per_turn_millions": 1.2,
+        "attack_millions": 2.5,
+        "recon_millions": 0.4,
+        "reload_millions": 25.0,
+        "rebuild_millions": 1400
+      },
+      "maneuver": {
+        "type": "SEA",
+        "terrain_constraints": "SEA and LITTORAL nodes.",
+        "speed_per_turn_km": 110,
+        "operational_radius_km": 7000
+      },
+      "attack": {
+        "range_km": 1500,
+        "power": 82,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 28,
+        "reload_turns": 4,
+        "reload_cost_millions": 25.0
+      },
+      "detect": {
+        "sensor_range_km": 450,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 52,
+        "signature": "HIGH",
+        "max_hits": 4,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "MBT-004",
+      "name": "Russian Kilo-class Submarine",
+      "category": "MARITIME_BATTLE",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 300,
+        "activation_millions": 8,
+        "upkeep_per_turn_millions": 0.5,
+        "move_per_turn_millions": 0.4,
+        "attack_millions": 2.5,
+        "recon_millions": 0.2,
+        "reload_millions": 20.0,
+        "rebuild_millions": 350
+      },
+      "maneuver": {
+        "type": "SUBSURFACE",
+        "terrain_constraints": "SUBSURFACE and SEA nodes. Requires PORT for reload.",
+        "speed_per_turn_km": 55,
+        "operational_radius_km": 10000
+      },
+      "attack": {
+        "range_km": 1500,
+        "power": 78,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 9,
+        "reload_turns": 6,
+        "reload_cost_millions": 20.0
+      },
+      "detect": {
+        "sensor_range_km": 80,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 40,
+        "signature": "LOW",
+        "max_hits": 2,
+        "regen_per_turn": 3
+      }
+    },
+
+    {
+      "id": "MBT-005",
+      "name": "IRGC Fast Attack Craft Swarm",
+      "category": "MARITIME_BATTLE",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 50,
+        "activation_millions": 1,
+        "upkeep_per_turn_millions": 0.08,
+        "move_per_turn_millions": 0.05,
+        "attack_millions": 0.2,
+        "recon_millions": 0.05,
+        "reload_millions": 0.5,
+        "rebuild_millions": 60
+      },
+      "maneuver": {
+        "type": "SEA",
+        "terrain_constraints": "SEA and LITTORAL. Excels in strait and chokepoint denial. Cannot operate in high sea state.",
+        "speed_per_turn_km": 120,
+        "operational_radius_km": 1000
+      },
+      "attack": {
+        "range_km": 15,
+        "power": 55,
+        "damage_type": "KINETIC",
+        "area_effect": "AREA",
+        "magazine_depth": 5,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.5
+      },
+      "detect": {
+        "sensor_range_km": 20,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 10,
+        "signature": "LOW",
+        "max_hits": 2,
+        "regen_per_turn": 15
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 8: SPECIAL (5)
+    // ==========================================
+
+    {
+      "id": "SPE-001",
+      "name": "US Special Forces ODA",
+      "category": "SPECIAL",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.1,
+        "activation_millions": 0.05,
+        "upkeep_per_turn_millions": 0.02,
+        "move_per_turn_millions": 0.02,
+        "attack_millions": 0.15,
+        "recon_millions": 0.05,
+        "reload_millions": 0.1,
+        "rebuild_millions": 0.15
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes including denied areas. Air insert with TRANSPORT.",
+        "speed_per_turn_km": 30,
+        "operational_radius_km": 150
+      },
+      "attack": {
+        "range_km": 2,
+        "power": 60,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 6,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.1
+      },
+      "detect": {
+        "sensor_range_km": 10,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 15,
+        "signature": "VERY_LOW",
+        "max_hits": 2,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "SPE-002",
+      "name": "NSA Cyber Operations Team",
+      "category": "SPECIAL",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 5,
+        "activation_millions": 1,
+        "upkeep_per_turn_millions": 0.1,
+        "move_per_turn_millions": 0.01,
+        "attack_millions": 0.5,
+        "recon_millions": 0.3,
+        "reload_millions": 0.2,
+        "rebuild_millions": 6
+      },
+      "maneuver": {
+        "type": "CYBER",
+        "terrain_constraints": "No physical node. Operates across all networked nodes globally. Requires COMMS infrastructure.",
+        "speed_per_turn_km": 0,
+        "operational_radius_km": 999999
+      },
+      "attack": {
+        "range_km": 999999,
+        "power": 70,
+        "damage_type": "CYBER",
+        "area_effect": "SINGLE_TARGET",
+        "cyber_effect": "SENSOR_BLIND",
+        "magazine_depth": 6,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.2
+      },
+      "detect": {
+        "sensor_range_km": 999999,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 5,
+        "signature": "VERY_LOW",
+        "max_hits": 3,
+        "regen_per_turn": 20
+      }
+    },
+
+    {
+      "id": "SPE-003",
+      "name": "Russian Spetsnaz Company",
+      "category": "SPECIAL",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.2,
+        "activation_millions": 0.05,
+        "upkeep_per_turn_millions": 0.02,
+        "move_per_turn_millions": 0.02,
+        "attack_millions": 0.12,
+        "recon_millions": 0.05,
+        "reload_millions": 0.1,
+        "rebuild_millions": 0.25
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Deep penetration capable. Air insert via VDV/IL-76.",
+        "speed_per_turn_km": 28,
+        "operational_radius_km": 120
+      },
+      "attack": {
+        "range_km": 2,
+        "power": 55,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 5,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.1
+      },
+      "detect": {
+        "sensor_range_km": 8,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 12,
+        "signature": "VERY_LOW",
+        "max_hits": 2,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "SPE-004",
+      "name": "PLA Unit 61398 Cyber Team",
+      "category": "SPECIAL",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 8,
+        "activation_millions": 1.5,
+        "upkeep_per_turn_millions": 0.15,
+        "move_per_turn_millions": 0.01,
+        "attack_millions": 0.6,
+        "recon_millions": 0.4,
+        "reload_millions": 0.3,
+        "rebuild_millions": 9
+      },
+      "maneuver": {
+        "type": "CYBER",
+        "terrain_constraints": "No physical node. Global reach via network infrastructure.",
+        "speed_per_turn_km": 0,
+        "operational_radius_km": 999999
+      },
+      "attack": {
+        "range_km": 999999,
+        "power": 72,
+        "damage_type": "CYBER",
+        "area_effect": "SINGLE_TARGET",
+        "cyber_effect": "COST_INCREASE",
+        "magazine_depth": 8,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.3
+      },
+      "detect": {
+        "sensor_range_km": 999999,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 5,
+        "signature": "VERY_LOW",
+        "max_hits": 3,
+        "regen_per_turn": 20
+      }
+    },
+
+    {
+      "id": "SPE-005",
+      "name": "Iranian MOIS HUMINT Cell",
+      "category": "SPECIAL",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.5,
+        "activation_millions": 0.1,
+        "upkeep_per_turn_millions": 0.03,
+        "move_per_turn_millions": 0.01,
+        "attack_millions": 0.1,
+        "recon_millions": 0.05,
+        "reload_millions": 0.05,
+        "rebuild_millions": 0.6
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes including enemy-controlled. Clandestine movement.",
+        "speed_per_turn_km": 20,
+        "operational_radius_km": 200
+      },
+      "attack": {
+        "range_km": 1,
+        "power": 30,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 2,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.05
+      },
+      "detect": {
+        "sensor_range_km": 15,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": false
+      },
+      "health": {
+        "armor": 5,
+        "signature": "VERY_LOW",
+        "max_hits": 1,
+        "regen_per_turn": 8
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 9: ARTILLERY (5)
+    // ==========================================
+
+    {
+      "id": "ART-001",
+      "name": "HIMARS Battery",
+      "category": "ARTILLERY",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 45,
+        "activation_millions": 2,
+        "upkeep_per_turn_millions": 0.3,
+        "move_per_turn_millions": 0.2,
+        "attack_millions": 1.5,
+        "recon_millions": 0,
+        "reload_millions": 6.0,
+        "rebuild_millions": 55
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Wheeled — high road mobility. Shoot and displace doctrine.",
+        "speed_per_turn_km": 85,
+        "operational_radius_km": 480
+      },
+      "attack": {
+        "range_km": 300,
+        "power": 85,
+        "damage_type": "KINETIC",
+        "area_effect": "AREA",
+        "magazine_depth": 8,
+        "reload_turns": 2,
+        "reload_cost_millions": 6.0
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 20,
+        "signature": "MEDIUM",
+        "max_hits": 3,
+        "regen_per_turn": 12
+      }
+    },
+
+    {
+      "id": "ART-002",
+      "name": "M109A7 Paladin Battalion",
+      "category": "ARTILLERY",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 9,
+        "activation_millions": 0.8,
+        "upkeep_per_turn_millions": 0.15,
+        "move_per_turn_millions": 0.3,
+        "attack_millions": 0.4,
+        "recon_millions": 0,
+        "reload_millions": 1.5,
+        "rebuild_millions": 12
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes except SWAMP/JUNGLE. Tracked.",
+        "speed_per_turn_km": 55,
+        "operational_radius_km": 350
+      },
+      "attack": {
+        "range_km": 40,
+        "power": 72,
+        "damage_type": "KINETIC",
+        "area_effect": "AREA",
+        "magazine_depth": 10,
+        "reload_turns": 1,
+        "reload_cost_millions": 1.5
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 35,
+        "signature": "HIGH",
+        "max_hits": 4,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "ART-003",
+      "name": "Russian Iskander-M Brigade",
+      "category": "ARTILLERY",
+      "affiliation": "RED_RU",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 120,
+        "activation_millions": 5,
+        "upkeep_per_turn_millions": 0.5,
+        "move_per_turn_millions": 0.4,
+        "attack_millions": 3.0,
+        "recon_millions": 0,
+        "reload_millions": 15.0,
+        "rebuild_millions": 140
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Wheeled — road-mobile. Hide and displace doctrine.",
+        "speed_per_turn_km": 70,
+        "operational_radius_km": 500
+      },
+      "attack": {
+        "range_km": 500,
+        "power": 88,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 12,
+        "reload_turns": 4,
+        "reload_cost_millions": 15.0
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 22,
+        "signature": "MEDIUM",
+        "max_hits": 2,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "ART-004",
+      "name": "PLA PHL-03 MLRS Regiment",
+      "category": "ARTILLERY",
+      "affiliation": "RED_CN",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 30,
+        "activation_millions": 2,
+        "upkeep_per_turn_millions": 0.2,
+        "move_per_turn_millions": 0.25,
+        "attack_millions": 0.8,
+        "recon_millions": 0,
+        "reload_millions": 4.0,
+        "rebuild_millions": 38
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Wheeled — road-mobile.",
+        "speed_per_turn_km": 65,
+        "operational_radius_km": 400
+      },
+      "attack": {
+        "range_km": 150,
+        "power": 78,
+        "damage_type": "KINETIC",
+        "area_effect": "AREA",
+        "magazine_depth": 8,
+        "reload_turns": 2,
+        "reload_cost_millions": 4.0
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 20,
+        "signature": "MEDIUM",
+        "max_hits": 3,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "ART-005",
+      "name": "Iranian Fateh-110 Missile Battery",
+      "category": "ARTILLERY",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 15,
+        "activation_millions": 1,
+        "upkeep_per_turn_millions": 0.1,
+        "move_per_turn_millions": 0.15,
+        "attack_millions": 1.0,
+        "recon_millions": 0,
+        "reload_millions": 5.0,
+        "rebuild_millions": 18
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Road-mobile from prepared and concealed positions.",
+        "speed_per_turn_km": 55,
+        "operational_radius_km": 350
+      },
+      "attack": {
+        "range_km": 300,
+        "power": 65,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 6,
+        "reload_turns": 3,
+        "reload_cost_millions": 5.0
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": true
+      },
+      "health": {
+        "armor": 18,
+        "signature": "MEDIUM",
+        "max_hits": 2,
+        "regen_per_turn": 8
+      }
+    },
+
+    // ==========================================
+    // CATEGORY 10: IRREGULAR (5)
+    // ==========================================
+
+    {
+      "id": "IRR-001",
+      "name": "Urban Resistance Cell",
+      "category": "IRREGULAR",
+      "affiliation": "BLUE",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.05,
+        "activation_millions": 0.01,
+        "upkeep_per_turn_millions": 0.005,
+        "move_per_turn_millions": 0.005,
+        "attack_millions": 0.02,
+        "recon_millions": 0.01,
+        "reload_millions": 0.02,
+        "rebuild_millions": 0.06
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "URBAN and CITY nodes only. Cannot operate in open terrain — immediately detectable.",
+        "speed_per_turn_km": 15,
+        "operational_radius_km": 20
+      },
+      "attack": {
+        "range_km": 1,
+        "power": 25,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 4,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.02
+      },
+      "detect": {
+        "sensor_range_km": 3,
+        "reveal_quality": "POSITION",
+        "affected_by_EW": false
+      },
+      "special_effect": {
+        "type": "COST_INCREASE",
+        "description": "Enemy units occupying same node pay +25% upkeep per turn — harassment, sabotage, intelligence denial."
+      },
+      "health": {
+        "armor": 5,
+        "signature": "VERY_LOW",
+        "max_hits": 2,
+        "regen_per_turn": 8
+      }
+    },
+
+    {
+      "id": "IRR-002",
+      "name": "Insurgent IED Network",
+      "category": "IRREGULAR",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.03,
+        "activation_millions": 0.005,
+        "upkeep_per_turn_millions": 0.003,
+        "move_per_turn_millions": 0.003,
+        "attack_millions": 0.01,
+        "recon_millions": 0.01,
+        "reload_millions": 0.015,
+        "rebuild_millions": 0.04
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "Any LAND node. Emplaced — does not move once deployed. Covert placement.",
+        "speed_per_turn_km": 10,
+        "operational_radius_km": 10
+      },
+      "attack": {
+        "range_km": 0,
+        "power": 35,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 6,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.015
+      },
+      "detect": {
+        "sensor_range_km": 1,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "special_effect": {
+        "type": "SPEED_REDUCTION",
+        "description": "Enemy units moving through this node have speed reduced by 50% for 2 turns — attrition and delay without direct engagement."
+      },
+      "health": {
+        "armor": 2,
+        "signature": "VERY_LOW",
+        "max_hits": 1,
+        "regen_per_turn": 5
+      }
+    },
+
+    {
+      "id": "IRR-003",
+      "name": "Proxy Militia Brigade",
+      "category": "IRREGULAR",
+      "affiliation": "RED_IRR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.15,
+        "activation_millions": 0.03,
+        "upkeep_per_turn_millions": 0.01,
+        "move_per_turn_millions": 0.01,
+        "attack_millions": 0.05,
+        "recon_millions": 0.02,
+        "reload_millions": 0.08,
+        "rebuild_millions": 0.2
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Low mobility — suited to holding terrain not maneuver.",
+        "speed_per_turn_km": 20,
+        "operational_radius_km": 60
+      },
+      "attack": {
+        "range_km": 2,
+        "power": 38,
+        "damage_type": "KINETIC",
+        "area_effect": "AREA",
+        "magazine_depth": 5,
+        "reload_turns": 1,
+        "reload_cost_millions": 0.08
+      },
+      "detect": {
+        "sensor_range_km": 3,
+        "reveal_quality": "PRESENCE",
+        "affected_by_EW": false
+      },
+      "special_effect": {
+        "type": "COST_INCREASE",
+        "description": "Holding a node with this unit increases enemy recon and attack costs in that node by +15% — terrain denial through presence."
+      },
+      "health": {
+        "armor": 8,
+        "signature": "LOW",
+        "max_hits": 5,
+        "regen_per_turn": 10
+      }
+    },
+
+    {
+      "id": "IRR-004",
+      "name": "Guerrilla Sabotage Cell",
+      "category": "IRREGULAR",
+      "affiliation": "OPFOR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.04,
+        "activation_millions": 0.01,
+        "upkeep_per_turn_millions": 0.004,
+        "move_per_turn_millions": 0.004,
+        "attack_millions": 0.02,
+        "recon_millions": 0.015,
+        "reload_millions": 0.02,
+        "rebuild_millions": 0.05
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "All LAND nodes. Prioritizes TRANSPORT, PORT, and AIRFIELD nodes for operations.",
+        "speed_per_turn_km": 25,
+        "operational_radius_km": 80
+      },
+      "attack": {
+        "range_km": 1,
+        "power": 20,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 3,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.02
+      },
+      "detect": {
+        "sensor_range_km": 5,
+        "reveal_quality": "IDENTITY",
+        "affected_by_EW": false
+      },
+      "special_effect": {
+        "type": "COST_INCREASE",
+        "description": "Attacks TRANSPORT and SUSTAINMENT nodes — raises reload and move costs for all units using that node by +30% for 2 turns."
+      },
+      "health": {
+        "armor": 5,
+        "signature": "VERY_LOW",
+        "max_hits": 2,
+        "regen_per_turn": 6
+      }
+    },
+
+    {
+      "id": "IRR-005",
+      "name": "Tribal Auxiliary Force",
+      "category": "IRREGULAR",
+      "affiliation": "OPFOR",
+      "transport_dependent": false,
+      "cost": {
+        "creation_millions": 0.02,
+        "activation_millions": 0.005,
+        "upkeep_per_turn_millions": 0.002,
+        "move_per_turn_millions": 0.002,
+        "attack_millions": 0.01,
+        "recon_millions": 0.008,
+        "reload_millions": 0.01,
+        "rebuild_millions": 0.03
+      },
+      "maneuver": {
+        "type": "LAND",
+        "terrain_constraints": "MOUNTAIN, JUNGLE, DESERT, and RURAL nodes only. Deep local terrain knowledge.",
+        "speed_per_turn_km": 20,
+        "operational_radius_km": 50
+      },
+      "attack": {
+        "range_km": 1,
+        "power": 15,
+        "damage_type": "KINETIC",
+        "area_effect": "SINGLE_TARGET",
+        "magazine_depth": 3,
+        "reload_turns": 2,
+        "reload_cost_millions": 0.01
+      },
+      "detect": {
+        "sensor_range_km": 20,
+        "reveal_quality": "FULL_PROFILE",
+        "affected_by_EW": false
+      },
+      "special_effect": {
+        "type": "INTEL_REVEAL",
+        "description": "Passive INTEL_REVEAL — exposes enemy unit positions in adjacent nodes each turn without requiring a recon action. Faction-assignable at scenario setup."
+      },
+      "health": {
+        "armor": 5,
+        "signature": "VERY_LOW",
+        "max_hits": 3,
+        "regen_per_turn": 5
+      }
+    }
+
+  ]
+}
