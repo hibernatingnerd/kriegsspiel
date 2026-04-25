@@ -386,11 +386,27 @@ def generate_water(height_map, water_coverage=0.3):
     return water
 
 
-def initialize_grid(x=100, y=100, urban_centers=1, iter=10, max_size=50, forest_density=10, restarts=10, water_coverage=0.1, urban_size=20):
+def initialize_grid(
+    x=100,
+    y=100,
+    urban_centers=1,
+    iter=10,
+    max_size=50,
+    forest_density=10,
+    restarts=10,
+    water_coverage=0.1,
+    urban_size=20,
+    seed=None,
+    render=True,
+):
     # categorical layers: 0=forest, 1=urban, 2=roads, 3=water
     flat = np.zeros((x, y, 4), dtype=np.float32)
     altitude = np.zeros((x, y), dtype=np.float32)
-    rng = np.random.default_rng()
+    # Deterministic mode: lock both Python and NumPy RNG streams.
+    if seed is not None:
+        random.seed(seed)
+        np.random.seed(seed)
+    rng = np.random.default_rng(seed)
 
     """altitude"""
     altitude = assign_heights(flat[:, :, 0], num_peaks=5, x_max=x, y_max=y)
@@ -430,15 +446,28 @@ def initialize_grid(x=100, y=100, urban_centers=1, iter=10, max_size=50, forest_
     """hatching"""
     draw_hatch(flat[:, :, 1], flat[:, :, 2], spacing=8, angle='cross')
 
-    render_merged(flat, altitude)
-    render_merged_3d_scatter(flat, altitude)
+    if render:
+        render_merged(flat, altitude)
+        render_merged_3d_scatter(flat, altitude)
 
     return flat, altitude
     
 
 
 if __name__ == "__main__":
-    terrain, altitude = initialize_grid(x = 100, y = 100, iter=200, max_size=200, restarts=20, forest_density=20, urban_centers=2, water_coverage=.2, urban_size=50)
+    terrain, altitude = initialize_grid(
+        x=100,
+        y=100,
+        iter=200,
+        max_size=200,
+        restarts=20,
+        forest_density=20,
+        urban_centers=2,
+        water_coverage=.2,
+        urban_size=50,
+        seed=1729,
+        render=True,
+    )
     np.savez("test_grid.npz", terrain = terrain, altitude=altitude)
     print(os.path.abspath("test_grid.npz"))  # exact path it saved to
     print(os.path.exists("test_grid.npz"))   # did it actually save

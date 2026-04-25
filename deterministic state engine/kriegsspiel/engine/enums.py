@@ -69,6 +69,7 @@ class TerrainBase(str, Enum):
 
 class TerrainFeature(str, Enum):
     RIVER = "RIVER"
+    WATER_DEEP = "WATER_DEEP"
     BRIDGE = "BRIDGE"
     FORD = "FORD"
     ROAD = "ROAD"

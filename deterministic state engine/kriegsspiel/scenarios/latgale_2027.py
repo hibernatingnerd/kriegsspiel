@@ -210,3 +210,78 @@ def build_latgale_world(*, run_id: str = "latgale-demo-001", seed: int = 1729) -
     )
     validate_world_invariants(world)
     return world
+
+
+def summarize(world: WorldState) -> dict:
+    """Compact scenario snapshot for demo output."""
+    return {
+        "scenario": world.identity.scenario_id,
+        "turn": world.turn,
+        "time_min": world.timestamp_minutes,
+        "grid": (world.terrain.height, world.terrain.width),
+        "units_total": len(world.units),
+        "units_alive": len(world.alive_units()),
+        "blue_alive": len(world.alive_units_of_side(Side.BLUE)),
+        "red_alive": len(world.alive_units_of_side(Side.RED)),
+        "objectives": [
+            {
+                "id": obj.objective_id,
+                "name": obj.name,
+                "held_by": obj.held_by.value,
+                "weight": obj.weight,
+            }
+            for obj in world.objectives.values()
+        ],
+        "crossings": [
+            {
+                "id": x.crossing_id,
+                "a": x.cell_a,
+                "b": x.cell_b,
+                "integrity": x.integrity,
+                "controlled_by": x.controlled_by.value,
+            }
+            for x in world.terrain.crossings
+        ],
+    }
+
+
+def detailed_status(world: WorldState) -> None:
+    """Human-readable situation report for terminal/demo."""
+    print(f"=== {world.identity.scenario_id} | Turn {world.turn} ===")
+    print(f"Time (min): {world.timestamp_minutes}")
+    print(f"Grid: {world.terrain.height} x {world.terrain.width}")
+    print(
+        "Alive units: "
+        f"BLUE={len(world.alive_units_of_side(Side.BLUE))} | "
+        f"RED={len(world.alive_units_of_side(Side.RED))}"
+    )
+
+    print("\nOBJECTIVES:")
+    for obj in world.objectives.values():
+        print(
+            f"  - {obj.name:12s} ({obj.objective_id}) at {obj.cell} | "
+            f"held_by={obj.held_by.value} | weight={obj.weight}"
+        )
+
+    print("\nBLUE FORCES:")
+    for u in world.alive_units_of_side(Side.BLUE):
+        supply = "UNLIMITED" if u.supply_days_remaining is None else f"{u.supply_days_remaining:.1f}d"
+        print(
+            f"  - {u.unit_id:16s} pos={u.position} str={u.strength:.2f} "
+            f"posture={u.posture.value} supply={supply}"
+        )
+
+    print("\nRED FORCES:")
+    for u in world.alive_units_of_side(Side.RED):
+        supply = "UNLIMITED" if u.supply_days_remaining is None else f"{u.supply_days_remaining:.1f}d"
+        print(
+            f"  - {u.unit_id:16s} pos={u.position} str={u.strength:.2f} "
+            f"posture={u.posture.value} supply={supply}"
+        )
+
+    print("\nRIVER CROSSINGS:")
+    for x in world.terrain.crossings:
+        print(
+            f"  - {x.crossing_id:16s} {x.cell_a} <-> {x.cell_b} | "
+            f"{x.integrity} | controlled_by={x.controlled_by.value}"
+        )
