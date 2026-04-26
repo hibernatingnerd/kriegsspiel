@@ -14,8 +14,3 @@ w = build_latgale_world()
 w.compute_visibilities()
 for unit in w.units.values():
     print(unit.observes)
-
-
-
-
-# from 

@@ -425,6 +425,7 @@ class WorldState(BaseModel):
     side_posture: dict[Side, str] = Field(
         default_factory=lambda: {Side.BLUE: "STANDARD", Side.RED: "STANDARD"}
     )
+    unit_decision_list: list
 
     @staticmethod
     def cell_key(coord: Coord) -> str:
@@ -523,9 +524,66 @@ class WorldState(BaseModel):
         raw = observer_mult * target_mult * terrain_mult
         return raw / (raw + distance)  # same ratio formula as win_probability
 
+    def _build_attack_map(self, unit_decision_list: list[dict]) -> dict[str, list[str]]:
+        attack_map = {}
+        for decision in unit_decision_list:
+            if decision["action"] == "ATTACK":
+                target_id = decision["target_id"]
+                attacker_id = decision["unit_id"]
+                if target_id not in attack_map:
+                    attack_map[target_id] = []
+                attack_map[target_id].append(attacker_id)
+        return attack_map
 
-    def one_sided_attack(self, A, B):
+    def _resolve_attacks(self, attack_map: dict) -> dict[str, float]:
+        results = {}
+        for target_id, attacker_ids in attack_map.items():
+            target = self.units[target_id]
+            attackers = [self.units[a] for a in attacker_ids]
+
+            # --- defense score ---
+            defense_score = target.effective_combat_factor
+            if target.dug_in:
+                defense_score *= 1.4
+            if target.posture == Posture.DEFENSIVE:
+                defense_score *= 1.2
+
+            # --- attack score ---
+            base_attack = sum(a.effective_combat_factor for a in attackers)
+            coordination_bonus = len(attackers) ** 0.7
+            attack_score = base_attack * coordination_bonus
+            if any(a.posture == Posture.OFFENSIVE for a in attackers):
+                attack_score *= 1.15
+
+            # --- damage as a ratio ---
+            damage = attack_score / (attack_score + defense_score)  # 0.0–1.0
+
+            # --- apply to strength ---
+            target.strength = max(0.0, target.strength - damage)
+
+            # --- readiness follows strength thresholds ---
+            if target.strength == 0.0:
+                target.readiness = Readiness.DESTROYED
+            elif target.strength < 0.3:
+                target.readiness = Readiness.SUPPRESSED
+            elif target.strength < 0.6:
+                target.readiness = Readiness.DEGRADED
+        return results
+    
+    def map_solve_attacks(self):
+        """map out all attack relationships and solve them"""
+        map = self._build_attack_map(self.unit_decision_list)
+        self._resolve_attacks(map)
+
+
+
+        
+
+
+    def attack(self, attackers: list, defender):
         pass
+        
+
 
 
 def validate_world_invariants(world: WorldState) -> None:
