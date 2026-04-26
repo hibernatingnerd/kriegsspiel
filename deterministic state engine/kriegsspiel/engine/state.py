@@ -304,6 +304,7 @@ class UnitState(BaseModel):
     dug_in: bool = False
     turns_isolated: int = Field(default=0, ge=0)
     notes: str = ""
+    observes: dict[str, float] = Field(default_factory=dict, exclude=True)
 
     @field_validator("supply_days_remaining")
     @classmethod
@@ -486,6 +487,45 @@ class WorldState(BaseModel):
         for r in range(self.terrain.height):
             for c in range(self.terrain.width):
                 yield self.cell_key((r, c))
+
+    def compute_visibilities(self, k=5):
+        units = list(self.units.values())
+        sides = [u.side for u in units]
+        detection_matrix = np.zeros((len(units), len(units)))
+        for i, unit_a in enumerate(units):
+            for j, unit_b in enumerate(units):
+                if i != j:
+                    # now you have both unit objects to compare
+                    detection_matrix[i, j] = self.detection_strength(unit_a, unit_b)
+
+        for i, unit in enumerate(units):
+            for side in [Side.BLUE, Side.RED]:
+                side_indices = [j for j, s in enumerate(sides) if s == side and j != i]
+                scores = sorted(side_indices, key=lambda j: detection_matrix[i, j], reverse=True)[:k]
+                unit.observes[side] = [(units[j].unit_id, detection_matrix[i, j]) for j in scores]
+
+
+    def detection_strength(self, observer: UnitState, target: UnitState) -> float:
+        distance = chebyshev_distance(observer.position, target.position)
+        
+        observer_mult = observer.effective_combat_factor
+        
+        target_mult = 1.0
+        if target.dug_in:
+            target_mult *= 0.6
+        if target.posture == Posture.MOVING:
+            target_mult *= 1.4
+        if target.posture == Posture.SCREENING:
+            target_mult *= 0.7
+
+        terrain_mult = self.terrain.cell_at(target.position).visibility_factor
+
+        raw = observer_mult * target_mult * terrain_mult
+        return raw / (raw + distance)  # same ratio formula as win_probability
+
+
+    def one_sided_attack(self, A, B):
+        pass
 
 
 def validate_world_invariants(world: WorldState) -> None:
