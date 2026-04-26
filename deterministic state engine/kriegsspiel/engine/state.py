@@ -291,9 +291,10 @@ class UnitTemplate(BaseModel):
 
 class UnitState(BaseModel):
     model_config = ConfigDict(frozen=False)
-
+    
     unit_id: str
     template_id: str
+    domain: Domain = Domain.LAND
     side: Side
     affiliation: Affiliation
     position: Coord
@@ -425,7 +426,7 @@ class WorldState(BaseModel):
     side_posture: dict[Side, str] = Field(
         default_factory=lambda: {Side.BLUE: "STANDARD", Side.RED: "STANDARD"}
     )
-    unit_decision_list: list
+    unit_decision_list: list[dict] = Field(default_factory=list)
 
     @staticmethod
     def cell_key(coord: Coord) -> str:
@@ -508,9 +509,9 @@ class WorldState(BaseModel):
 
     def detection_strength(self, observer: UnitState, target: UnitState) -> float:
         distance = chebyshev_distance(observer.position, target.position)
-        
+
         observer_mult = observer.effective_combat_factor
-        
+
         target_mult = 1.0
         if target.dug_in:
             target_mult *= 0.6
@@ -521,8 +522,11 @@ class WorldState(BaseModel):
 
         terrain_mult = self.terrain.cell_at(target.position).visibility_factor
 
-        raw = observer_mult * target_mult * terrain_mult
-        return raw / (raw + distance)  # same ratio formula as win_probability
+        # detection power vs concealment power
+        detection_power = observer_mult * terrain_mult
+        concealment_power = target_mult * distance
+
+        return detection_power / (detection_power + concealment_power)
 
     def _build_attack_map(self, unit_decision_list: list[dict]) -> dict[str, list[str]]:
         attack_map = {}

@@ -8,8 +8,7 @@ from kriegsspiel.engine.enums import Side, TerrainBase, TerrainFeature
 from kriegsspiel.scenarios.generated_world import build_world_from_npz
 
 
-def plot_state_grid(npz_path: str, save_path: str | None = None, show_units: bool = True):
-    world = build_world_from_npz(npz_path)
+def plot_state_grid(world, save_path: str | None = None, show_units: bool = True):
     grid = world.terrain
 
     base_order = [
