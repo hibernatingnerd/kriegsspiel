@@ -475,38 +475,81 @@ def apply_decisions_to_world(world, side, side_decisions: list) -> None:
     world.unit_decision_list.extend(side_decisions)
 
 
-def plan_side(world, side, *, backend: LLMBackend, prompt_template: str, timeout_s: float = 15.0) -> PlannerResult:
-    bundle = build_llm_input(world, side)
+def plan_unit(world, unit, side_str, *, backend: LLMBackend, prompt_template: str, timeout_s: float = 15.0) -> dict:
+    """Get a single decision for a single unit."""
+    bundle = build_llm_input(world, side_str)
+    # narrow the bundle to just this unit's perspective
+    bundle["your_units"] = [u for u in bundle["your_units"] if u["unit_id"] == unit.unit_id]
+    bundle["acting_unit_id"] = unit.unit_id
     prompt = render_planner_prompt(prompt_template, bundle)
-    prompt_text_hash = _short_hash({"prompt": prompt})
 
     call_result = backend.call(prompt, timeout_s=timeout_s)
 
     if call_result.error:
-        side_intent, decisions, issues, scope, _ = validate_and_normalize(world, side, None, llm_error=call_result.error)
-        reason = call_result.error
-    else:
-        parsed, parse_err = parse_planner_json(call_result.raw_text)
-        side_intent, decisions, issues, scope, _ = validate_and_normalize(world, side, parsed, parse_error=parse_err)
-        reason = parse_err if parse_err else None
+        return _wait_decision(unit.unit_id, rationale=f"fallback: {call_result.error}")
 
-    fallback_reason = (reason or "unknown") if scope == "WHOLE_SIDE" else None
-    parse_ok_final = call_result.error is None and bool(call_result.raw_text) and parse_planner_json(call_result.raw_text)[0] is not None
+    parsed, parse_err = parse_planner_json(call_result.raw_text)
+    if parsed is None:
+        return _wait_decision(unit.unit_id, rationale=f"fallback: {parse_err}")
+
+    decisions = parsed.get("decisions", [])
+    for d in decisions:
+        if d.get("unit_id") == unit.unit_id:
+            action = d.get("action")
+            target_id = d.get("target_id")
+
+            if action not in ALLOWED_ACTIONS:
+                return _wait_decision(unit.unit_id, rationale="fallback: bad action")
+            if action == "ATTACK":
+                if not target_id or target_id not in world.units:
+                    return _wait_decision(unit.unit_id, rationale="fallback: invalid target")
+                target = world.units[target_id]
+                if _is_destroyed(target) or _side_str(target.side) == side_str:
+                    return _wait_decision(unit.unit_id, rationale="fallback: invalid target")
+            return {
+                "unit_id": unit.unit_id,
+                "action": action,
+                "target_id": target_id if action == "ATTACK" else None,
+                "target_position": None,
+                "rationale": _clean_rationale(d.get("rationale")),
+            }
+
+    return _wait_decision(unit.unit_id, rationale="fallback: no decision returned")
+
+
+def plan_side(world, side, *, backend: LLMBackend, prompt_template: str, timeout_s: float = 15.0) -> PlannerResult:
+    side_str = _side_str(side)
+    alive_units = [
+        u for u in world.units.values()
+        if _side_str(u.side) == side_str and not _is_destroyed(u)
+    ]
+
+    all_decisions = []
+    all_issues = []
+
+    for unit in sorted(alive_units, key=lambda u: u.unit_id):
+        decision = plan_unit(world, unit, side_str, backend=backend, prompt_template=prompt_template, timeout_s=timeout_s)
+        all_decisions.append(decision)
+
+    any_fallbacks = any(d["rationale"] and d["rationale"].startswith("fallback:") for d in all_decisions)
+    scope = "PER_ITEM" if any_fallbacks else "NONE"
+
+    bundle = build_llm_input(world, side)
 
     return PlannerResult(
-        side=_side_str(side),
-        side_intent=side_intent,
-        final_decisions=decisions,
-        issues=issues,
+        side=side_str,
+        side_intent=f"{side_str} per-unit planning ({len(alive_units)} units)",
+        final_decisions=all_decisions,
+        issues=all_issues,
         fallback_scope=scope,
-        fallback_reason=fallback_reason,
-        raw_llm_output=call_result.raw_text,
-        parse_ok=bool(parse_ok_final),
-        latency_ms=call_result.latency_ms,
-        request_id=call_result.request_id,
+        fallback_reason=None,
+        raw_llm_output="",
+        parse_ok=True,
+        latency_ms=0,
+        request_id=None,
         input_state_hash=bundle["input_state_hash"],
         input_summary=bundle["situation_summary"],
-        prompt_text_hash=prompt_text_hash,
+        prompt_text_hash="",
     )
 
 

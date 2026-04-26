@@ -13,6 +13,7 @@ import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+import numpy as np
 
 if not os.environ.get("ANTHROPIC_API_KEY"):
     print("ERROR: ANTHROPIC_API_KEY not found.")
@@ -20,7 +21,7 @@ if not os.environ.get("ANTHROPIC_API_KEY"):
     print("  ANTHROPIC_API_KEY=sk-ant-...")
     sys.exit(1)
 
-from kriegsspiel.scenarios.latgale_2027 import build_latgale_world
+from kriegsspiel.scenarios.coast import CoastScenario
 from kriegsspiel.engine.enums import Side
 from kriegsspiel.engine.llm_planner import (
     AnthropicBackend, plan_side, apply_decisions_to_world,
@@ -30,6 +31,67 @@ from kriegsspiel.engine.audit import (
     AuditLog, canonical_hash, snapshot_units_for_delta, post_combat_deltas,
     build_turn_plan_record, build_turn_aar_record, build_turn_summary_record,
 )
+
+def plot_world_status(world, save_dir: str = "turn_plots") -> None:
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    from kriegsspiel.engine.enums import TerrainBase
+
+    Path(save_dir).mkdir(exist_ok=True)
+
+    terrain = world.terrain
+    h, w = terrain.height, terrain.width
+
+    # build terrain image once
+    color_map = {
+        TerrainBase.OPEN:       [0.83, 0.90, 0.71],
+        TerrainBase.FOREST:     [0.29, 0.49, 0.35],
+        TerrainBase.WATER:      [0.29, 0.56, 0.85],
+        TerrainBase.URBAN:      [0.76, 0.70, 0.50],
+        TerrainBase.IMPASSABLE: [0.33, 0.33, 0.33],
+    }
+    terrain_mat = np.zeros((h, w, 3))
+    for r in range(h):
+        for c in range(w):
+            cell = terrain.cell_at((r, c))
+            terrain_mat[r, c] = color_map.get(cell.base, [1, 1, 1])
+
+    readiness_colors = {
+        "FULLY_OPERATIONAL": "#00ff00",
+        "DEGRADED":          "#ffaa00",
+        "SUPPRESSED":        "#ff4400",
+        "DESTROYED":         "#444444",
+    }
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.imshow(terrain_mat, origin="upper", aspect="equal", zorder=0)
+
+    for unit in world.alive_units_of_side(Side.BLUE):
+        r, c = unit.position
+        rc = readiness_colors.get(unit.readiness.value, "#ffffff")
+        ax.plot(c, r, "o", color="#1f77b4", markersize=10, markeredgecolor=rc, markeredgewidth=2, zorder=5)
+        ax.text(c + 1, r, unit.unit_id.split("-")[1], color="white", fontsize=6, zorder=6,
+                bbox=dict(boxstyle="round,pad=0.1", fc="black", alpha=0.5, ec="none"))
+
+    for unit in world.alive_units_of_side(Side.RED):
+        r, c = unit.position
+        rc = readiness_colors.get(unit.readiness.value, "#ffffff")
+        ax.plot(c, r, "X", color="#d62728", markersize=10, markeredgecolor=rc, markeredgewidth=2, zorder=5)
+        ax.text(c + 1, r, unit.unit_id.split("-")[1], color="white", fontsize=6, zorder=6,
+                bbox=dict(boxstyle="round,pad=0.1", fc="black", alpha=0.5, ec="none"))
+
+    legend = [
+        mpatches.Patch(color="#1f77b4", label="BLUE"),
+        mpatches.Patch(color="#d62728", label="RED"),
+        mpatches.Patch(color="#00ff00", label="FULLY_OPERATIONAL"),
+        mpatches.Patch(color="#ffaa00", label="DEGRADED"),
+        mpatches.Patch(color="#ff4400", label="SUPPRESSED"),
+    ]
+    ax.legend(handles=legend, loc="lower right", fontsize=8)
+    ax.set_title(f"Turn {world.turn} | BLUE: {len(world.alive_units_of_side(Side.BLUE))} | RED: {len(world.alive_units_of_side(Side.RED))}")
+    ax.axis("off")
+    plt.tight_layout()
+    plt.show()
 
 
 def world_summary(world):
@@ -76,6 +138,13 @@ def run_single_turn(world, backend, planner_template, aar_template, audit_log, r
     pre_turn_hash = canonical_hash(world_summary(world))
     pre_combat_snap = snapshot_units_for_delta(world)
     world.unit_decision_list = []
+
+    # --- movement phase ---
+    print(f"\n[TURN {world.turn}] Moving units...")
+    planning_world.move_units_tactically(world, radius=5, seed=world.turn)
+    print(f"    Movement complete")
+
+    print(f"\n[TURN {world.turn}] BLUE planning (Claude call)...")
 
     print(f"\n[TURN {world.turn}] BLUE planning (Claude call)...")
     blue = plan_side(planning_world, "BLUE", backend=backend, prompt_template=planner_template)
@@ -208,7 +277,7 @@ def run_single_turn(world, backend, planner_template, aar_template, audit_log, r
 
 def main():
     parser = argparse.ArgumentParser(description="Run multi-turn Claude demo")
-    parser.add_argument("--turns", type=int, default=1, help="Number of turns to run")
+    parser.add_argument("--turns", type=int, default=10, help="Number of turns to run")
     args = parser.parse_args()
 
     print("=" * 70)
@@ -216,7 +285,7 @@ def main():
     print("=" * 70)
 
     print("\n[1] Building Latgale world...")
-    world = build_latgale_world()
+    world = CoastScenario().build_world(run_id="coast-demo-001", seed=12)
     print(f"    Turn {world.turn}, {len(world.units)} units")
 
     print("\n[2] Setting up Claude backend...")
@@ -235,8 +304,10 @@ def main():
     final_stop_reason = "unknown"
 
     with AuditLog(run_id=run_id) as audit_log:
+        plot_world_status(world)
         while not should_stop(world, executed_turns, args.turns):
             run_single_turn(world, backend, planner_template, aar_template, audit_log, run_id)
+            plot_world_status(world)
             executed_turns += 1
         final_stop_reason = stop_reason(world, executed_turns, args.turns)
 

@@ -579,6 +579,84 @@ class WorldState(BaseModel):
         map = self._build_attack_map(self.unit_decision_list)
         self._resolve_attacks(map)
 
+    def move_units_tactically(self, world, radius: int = 5, seed: int | None = None) -> None:
+        rng = np.random.default_rng(seed)
+        occupied = {u.position for u in self.units.values() if u.is_alive}
+
+        # compute center of mass for each side
+        blue_units = [u for u in self.units.values() if u.is_alive and u.side == Side.BLUE]
+        red_units  = [u for u in self.units.values() if u.is_alive and u.side == Side.RED]
+
+        blue_com = np.mean([u.position for u in blue_units], axis=0) if blue_units else np.array([0, 0])
+        red_com  = np.mean([u.position for u in red_units],  axis=0) if red_units  else np.array([0, 0])
+
+        cover_bases = {TerrainBase.FOREST, TerrainBase.URBAN}
+        cover_features = {TerrainFeature.ROAD, TerrainFeature.URBAN_DENSE}
+
+        for unit in self.units.values():
+            if not unit.is_alive:
+                continue
+
+            pos = np.array(unit.position, dtype=float)
+
+            # vector toward enemy center of mass
+            enemy_com = red_com if unit.side == Side.BLUE else blue_com
+            toward_enemy = enemy_com - pos
+            norm = np.linalg.norm(toward_enemy)
+            if norm > 0:
+                toward_enemy = toward_enemy / norm  # unit vector
+
+            r, c = unit.position
+            candidates = []
+
+            for dr in range(-radius, radius + 1):
+                for dc in range(-radius, radius + 1):
+                    if dr == 0 and dc == 0:
+                        continue
+                    coord = (r + dr, c + dc)
+                    if not world.terrain.in_bounds(coord):
+                        continue
+                    if not world.terrain.is_passable_ground(coord):
+                        continue
+                    if coord in occupied:
+                        continue
+
+                    cell = world.terrain.cell_at(coord)
+
+                    # directional score — alignment with enemy vector
+                    move_vec = np.array([dr, dc], dtype=float)
+                    move_norm = np.linalg.norm(move_vec)
+                    if move_norm > 0:
+                        move_vec = move_vec / move_norm
+                    directional_score = float(np.dot(toward_enemy, move_vec))  # -1 to 1
+
+                    # terrain attraction — cover and road features
+                    terrain_score = 0.0
+                    if cell.base in cover_bases:
+                        terrain_score += 0.6
+                    if any(f in cell.features for f in cover_features):
+                        terrain_score += 0.4
+                    terrain_score += cell.cover_factor  # 0-1
+
+                    # combined weight — bias toward enemy but pulled by terrain
+                    weight = (directional_score + 1.0)  # shift to 0-2 range
+                    weight *= (1.0 + terrain_score)      # terrain multiplier
+                    weight = max(weight, 0.01)            # floor to keep all cells pickable
+
+                    candidates.append((coord, weight))
+
+            if not candidates:
+                continue
+
+            coords, weights = zip(*candidates)
+            weights = np.array(weights, dtype=float)
+            weights /= weights.sum()
+
+            chosen = coords[rng.choice(len(coords), p=weights)]
+            occupied.discard(unit.position)
+            unit.position = chosen
+            occupied.add(chosen)
+
 
 
         
