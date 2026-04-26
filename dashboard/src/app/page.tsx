@@ -4,11 +4,12 @@ import { useState } from 'react'
 import type { AppPhase, Scenario, GameState, ScenarioConfig, DecisionKey } from '@/lib/schema'
 import {
   ALL_SCENARIOS,
-  SCENARIO_GREY_HORIZON,
+  SCENARIO_IRON_CORRIDOR,
   GAME_STATE_IN_PROGRESS,
   GAME_STATE_COMPLETED,
   GREY_HORIZON_DECISIONS,
 } from '@/lib/mock-data'
+
 import { mockAdjudicate } from '@/lib/adjudicate'
 import SetupView   from '@/components/SetupView'
 import RunView     from '@/components/RunView'
@@ -17,15 +18,15 @@ import DebriefView from '@/components/DebriefView'
 const NOW  = '2026-04-25 17:42 UTC'
 const USER = 'JEFF.CAMPBELL'
 
-function buildInitialGameState(scenario: Scenario, config: ScenarioConfig): GameState {
+function buildInitialGameState(scenario: Scenario): GameState {
   return {
     scenario_id: scenario.id,
     run_id: Math.random().toString(36).slice(2, 8).toUpperCase(),
     status: 'running',
     current_turn: 1,
     next_checkin_iso: null,
-    blue_force: { ...scenario.blue_force, combat_power: config.blue_force_strength },
-    red_force:  { ...scenario.red_force,  combat_power: config.red_force_strength  },
+    blue_force: { ...scenario.blue_force },
+    red_force:  { ...scenario.red_force  },
     max_penetration_km: 0,
     turn_log: [],
     pending_decision: GREY_HORIZON_DECISIONS[1] ?? null,
@@ -92,11 +93,9 @@ export default function Home() {
     const next: Scenario = {
       ...base,
       name: config.label_override || base.name,
-      timeline_hours: config.timeline_hours,
-      active_modifier_keys: config.active_modifier_keys,
     }
     setScenario(next)
-    setGameState(buildInitialGameState(next, config))
+    setGameState(buildInitialGameState(next))
     setPhase('run')
   }
 
@@ -107,15 +106,7 @@ export default function Home() {
   }
 
   function handleRunAgain() {
-    const gs = buildInitialGameState(scenario, {
-      base_scenario_id: scenario.id,
-      label_override: scenario.name,
-      timeline_hours: scenario.timeline_hours,
-      active_modifier_keys: scenario.active_modifier_keys,
-      blue_force_strength: 100,
-      red_force_strength: scenario.red_force.combat_power,
-    })
-    setGameState(gs)
+    setGameState(buildInitialGameState(scenario))
     setPhase('run')
   }
 
@@ -124,11 +115,11 @@ export default function Home() {
     if (p === 'run') {
       // If no active run, jump to the in-progress demo
       if (phase === 'setup') {
-        setScenario(SCENARIO_GREY_HORIZON)
+        setScenario(SCENARIO_IRON_CORRIDOR)
         setGameState(GAME_STATE_IN_PROGRESS)
       }
     } else if (p === 'debrief') {
-      setScenario(SCENARIO_GREY_HORIZON)
+      setScenario(SCENARIO_IRON_CORRIDOR)
       setGameState(GAME_STATE_COMPLETED)
     }
     setPhase(p)
