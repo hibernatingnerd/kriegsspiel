@@ -1,19 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import type { Scenario, GameState, DecisionKey, GridUnit } from '@/lib/schema'
+import type { Scenario, GameState, DecisionKey } from '@/lib/schema'
 import { GREY_HORIZON_AUDIT, type AuditEntry, type AuditCategory } from '@/lib/mock-audit'
 import MapPanel from './MapPanel'
-
-// TODO: replace with units from gameState once backend provides grid coords.
-const STUB_UNITS: GridUnit[] = [
-  { id: 'b1', side: 'blue', row: 140, col:  60, label: '1 BCT' },
-  { id: 'b2', side: 'blue', row: 120, col:  90, label: '2 BCT' },
-  { id: 'b3', side: 'blue', row: 160, col: 110, label: 'ARTY' },
-  { id: 'r1', side: 'red',  row:  60, col: 100, label: '1 MRD' },
-  { id: 'r2', side: 'red',  row:  40, col: 130, label: '2 MRD' },
-  { id: 'r3', side: 'red',  row:  80, col: 150, label: 'RECON' },
-]
+import { getStubUnits } from '@/lib/stub-unit-frames'  // TODO: remove when backend ships units
 
 interface Props {
   scenario: Scenario
@@ -119,7 +110,7 @@ export default function RunView({ scenario, gameState, onDecision }: Props) {
         scenarioType={scenario.scenario_type}
         scenarioName={scenario.name}
         locationName={scenario.location.name}
-        units={STUB_UNITS}
+        units={getStubUnits(gameState.current_turn)}
       />
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 

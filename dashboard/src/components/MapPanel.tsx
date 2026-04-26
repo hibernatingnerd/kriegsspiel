@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import type { ScenarioType, GridUnit } from '@/lib/schema'
+import { useMemo, useState } from 'react'
+import ms from 'milsymbol'
+import type { ScenarioType, GridUnit, SideLabel } from '@/lib/schema'
 
 interface Props {
   scenarioType: ScenarioType
@@ -27,6 +28,33 @@ const GRID_DIMS: Record<ScenarioType, { rows: number; cols: number }> = {
 
 const GRID_STEP = 20  // draw a faint line every N cells
 
+// Generic fallback SIDCs when the backend hasn't provided one yet.
+const FALLBACK_SIDC: Record<SideLabel, string> = {
+  blue: 'SFGPU-----H----',
+  red:  'SHGPU-----H----',
+}
+
+interface RenderedSymbol {
+  dataUrl: string
+  width: number
+  height: number
+  anchorX: number
+  anchorY: number
+}
+
+function renderSymbol(sidc: string, label: string): RenderedSymbol {
+  const sym = new ms.Symbol(sidc, {
+    size: 32,
+    uniqueDesignation: label,
+    fillOpacity: 0.9,
+    outlineWidth: 2,
+    outlineColor: 'rgba(0,0,0,0.8)',
+  })
+  const { width, height } = sym.getSize()
+  const anchor = sym.getAnchor()
+  return { dataUrl: sym.toDataURL(), width, height, anchorX: anchor.x, anchorY: anchor.y }
+}
+
 export default function MapPanel({
   scenarioType,
   scenarioName,
@@ -37,6 +65,21 @@ export default function MapPanel({
   const [showGrid, setShowGrid] = useState(true)
   const src = BACKDROP[scenarioType]
   const { rows, cols } = GRID_DIMS[scenarioType]
+
+  // Symbol render scale: ~12 cells tall on a 200-cell grid.
+  const symbolCellSize = Math.max(rows, cols) * 0.06
+
+  // Memoize per-unit symbol renders so we only recompute when sidc/label change.
+  const rendered = useMemo(() => {
+    return units.map((u) => {
+      const sidc = u.sidc ?? FALLBACK_SIDC[u.side]
+      try {
+        return { unit: u, render: renderSymbol(sidc, u.label) }
+      } catch {
+        return { unit: u, render: null }
+      }
+    })
+  }, [units])
 
   const vLines: number[] = []
   for (let c = GRID_STEP; c < cols; c += GRID_STEP) vLines.push(c)
@@ -53,7 +96,7 @@ export default function MapPanel({
         <div>
           <span className="title">MAP</span>
           <span className="dim" style={{ marginLeft: 12, fontSize: 11 }}>
-            {locationName} · {scenarioType} · {rows}×{cols}
+            {locationName} · {scenarioType} · {rows}×{cols} · {units.length} units
           </span>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -124,19 +167,23 @@ export default function MapPanel({
               </g>
             )}
 
-            {units.map((u) => {
-              const fill = u.side === 'blue' ? 'var(--blue)' : 'var(--red)'
+            {rendered.map(({ unit, render }) => {
+              if (!render) return null
+              const aspect = render.width / render.height
+              const w = symbolCellSize * aspect
+              const h = symbolCellSize
+              // milsymbol anchor is in its own coord space; normalize then place.
+              const ax = (render.anchorX / render.width) * w
+              const ay = (render.anchorY / render.height) * h
               return (
-                <g key={u.id}>
-                  <circle
-                    cx={u.col + 0.5}
-                    cy={u.row + 0.5}
-                    r={Math.max(rows, cols) * 0.012}
-                    fill={fill}
-                    stroke="rgba(0,0,0,0.7)"
-                    strokeWidth={0.5}
-                  />
-                </g>
+                <image
+                  key={unit.id}
+                  href={render.dataUrl}
+                  x={unit.col + 0.5 - ax}
+                  y={unit.row + 0.5 - ay}
+                  width={w}
+                  height={h}
+                />
               )
             })}
           </svg>
