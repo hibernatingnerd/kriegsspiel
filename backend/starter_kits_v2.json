@@ -1,0 +1,530 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "description": "Starter kit scenario library. Three scenario types — Land, Amphibious, Urban. Locations are generic node labels. Win conditions use the three core strategic objectives. RED only loses when BLUE wins. BLUE loses when any loss condition triggers.",
+    "strategic_objectives": {
+      "ANNIHILATION": "Destroy all enemy combat assets",
+      "RESOURCE_CONTROL": "Secure and hold designated resource nodes for required consecutive turns",
+      "DECAPITATION": "Eliminate or capture enemy command node — Command Decapitation threshold event"
+    },
+    "win_loss_structure": {
+      "BLUE_wins_when": "BLUE achieves its primary strategic objective",
+      "BLUE_loses_when": "Any BLUE loss condition triggers — Economic Exhaustion, Supply Chain Collapse, Political Will Failure, Proxy Exhaustion, Survival Failure, Command Decapitation, Nuclear Threshold",
+      "RED_wins_when": "BLUE loses — RED has no independent loss condition",
+      "RED_loses_when": "BLUE achieves its primary strategic objective",
+      "design_note": "RED plays to prevent BLUE success and trigger BLUE loss conditions. The game continues as long as BLUE loss conditions have not triggered and BLUE has not achieved its objective. Both sides keep taking turns until one condition resolves."
+    },
+    "entry_point_rule": "Each faction has one LAND entry node and one SEA entry node. All starting assets deploy from one of these two points on turn 1. Reinforcements and rebuilt assets enter only through these nodes.",
+    "asset_count_range": "6-10 assets per faction scaled to faction economic power and scenario readiness.",
+    "turn_structure": "28 turns. 6 hours per turn."
+  },
+
+  "scenarios": [
+
+    {
+      "id": "SCN-001",
+      "name": "Iron Corridor",
+      "type": "LAND",
+      "terrain": "RURAL / MIXED — open plains, forest corridors, river crossings, light urban",
+      "description": "RED mechanized force pushes through a land corridor toward BLUE-held territory. BLUE holds defensive positions and attrits the advance. Cyber and EW active from turn 1. No significant naval component — landlocked operational area.",
+      "turns": 28,
+
+      "nodes": {
+        "BLUE_land_entry": "Main Base",
+        "BLUE_sea_entry": "Coastal Logistics Port",
+        "RED_land_entry": "Forward Staging Area",
+        "RED_sea_entry": "Secondary Logistics Harbor",
+        "contested_nodes": ["Northern Depot", "Southern Depot", "River Crossing", "Junction Town"],
+        "objective_node": "Junction Town — primary strategic objective"
+      },
+
+      "victory_conditions": {
+        "BLUE_objective": "RESOURCE_CONTROL",
+        "BLUE_win": "Hold Junction Town and at least 2 of 4 contested nodes through turn 28",
+        "BLUE_loss_conditions": [
+          "Economic Exhaustion",
+          "Supply Chain Collapse",
+          "Political Will Failure",
+          "Survival Failure — Main Base falls",
+          "Command Decapitation"
+        ],
+        "RED_win": "Any BLUE loss condition triggers",
+        "RED_secondary_path": "ANNIHILATION — destroy all BLUE combat assets"
+      },
+
+      "factions": [
+
+        {
+          "id": "BLUE",
+          "name": "Coalition Defense Force",
+          "affiliation": "BLUE",
+          "entry_points": {
+            "land_node": "Main Base",
+            "sea_node": "Coastal Logistics Port"
+          },
+          "starting_resources": {
+            "dollars_millions": 6000,
+            "income_per_turn_millions": 280,
+            "supply_chain": 82,
+            "stability": 78,
+            "intel": 25
+          },
+          "starting_assets": [
+            {
+              "asset_id": "ARM-001",
+              "name": "Armored Brigade Combat Team",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 90
+            },
+            {
+              "asset_id": "LI-005",
+              "name": "Marine Rifle Battalion",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 95
+            },
+            {
+              "asset_id": "ART-001",
+              "name": "HIMARS Battery",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "AD-002",
+              "name": "Patriot PAC-3 Battery",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 88
+            },
+            {
+              "asset_id": "AIR-001",
+              "name": "Strike Wing",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 85
+            },
+            {
+              "asset_id": "SPE-001",
+              "name": "Special Forces Team",
+              "quantity": 2,
+              "entry_point": "land_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "SPE-002",
+              "name": "Cyber Operations Team",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 100
+            }
+          ],
+          "economic_notes": "Strong conventional force. Income advantage grows over time if resource nodes are held. Cyber team active from turn 1. Two SOF teams provide early recon and disruption."
+        },
+
+        {
+          "id": "RED",
+          "name": "Mechanized Assault Force",
+          "affiliation": "RED_RU",
+          "entry_points": {
+            "land_node": "Forward Staging Area",
+            "sea_node": "Secondary Logistics Harbor"
+          },
+          "starting_resources": {
+            "dollars_millions": 4500,
+            "income_per_turn_millions": 220,
+            "supply_chain": 75,
+            "stability": 70,
+            "intel": 30
+          },
+          "starting_assets": [
+            {
+              "asset_id": "ARM-002",
+              "name": "Armored Battle Group",
+              "quantity": 3,
+              "entry_point": "land_node",
+              "readiness": 85
+            },
+            {
+              "asset_id": "ART-003",
+              "name": "Long Range Missile Brigade",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 90
+            },
+            {
+              "asset_id": "AD-003",
+              "name": "Long Range SAM Regiment",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 88
+            },
+            {
+              "asset_id": "AIR-003",
+              "name": "Fighter Regiment",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 80
+            },
+            {
+              "asset_id": "SPE-003",
+              "name": "Special Operations Company",
+              "quantity": 2,
+              "entry_point": "land_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "SPE-004",
+              "name": "Cyber Team",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 100
+            }
+          ],
+          "economic_notes": "Mass over quality. Three armored battle groups provide sustained pressure. Lower income means RED must seize resource nodes by turn 8 or face economic deficit. Long range missile brigade creates deep strike threat from turn 1."
+        }
+      ]
+    },
+
+    {
+      "id": "SCN-002",
+      "name": "Blue Water",
+      "type": "AMPHIBIOUS",
+      "terrain": "COASTAL / LITTORAL — strait crossing, beach nodes, port facilities, island terrain",
+      "description": "RED amphibious assault force attempts to cross a contested strait and establish a lodgment. BLUE naval and air forces contest the crossing. Land nodes are secondary — the strait and the beachhead are the fight.",
+      "turns": 28,
+
+      "nodes": {
+        "BLUE_land_entry": "Island Defense Base",
+        "BLUE_sea_entry": "Allied Naval Station",
+        "RED_land_entry": "Mainland Staging Base",
+        "RED_sea_entry": "Assault Fleet Harbor",
+        "contested_nodes": ["Northern Beach", "Southern Beach", "Main Port", "Strait Chokepoint"],
+        "objective_node": "Main Port — primary strategic objective"
+      },
+
+      "victory_conditions": {
+        "BLUE_objective": "ANNIHILATION",
+        "BLUE_win": "Destroy RED amphibious fleet before lodgment is established OR deny all beach nodes through turn 28",
+        "BLUE_loss_conditions": [
+          "Economic Exhaustion",
+          "Supply Chain Collapse",
+          "Political Will Failure",
+          "Survival Failure — Island Defense Base falls",
+          "RED lodgment established — 2 or more RED combat assets ashore for 5 consecutive turns"
+        ],
+        "RED_win": "Any BLUE loss condition triggers",
+        "RED_secondary_path": "RESOURCE_CONTROL — hold Main Port for 10 consecutive turns"
+      },
+
+      "factions": [
+
+        {
+          "id": "BLUE",
+          "name": "Naval Defense Force",
+          "affiliation": "BLUE",
+          "entry_points": {
+            "land_node": "Island Defense Base",
+            "sea_node": "Allied Naval Station"
+          },
+          "starting_resources": {
+            "dollars_millions": 9000,
+            "income_per_turn_millions": 380,
+            "supply_chain": 80,
+            "stability": 72,
+            "intel": 35
+          },
+          "starting_assets": [
+            {
+              "asset_id": "MBT-001",
+              "name": "Guided Missile Destroyer",
+              "quantity": 2,
+              "entry_point": "sea_node",
+              "readiness": 95
+            },
+            {
+              "asset_id": "MBT-002",
+              "name": "Attack Submarine",
+              "quantity": 1,
+              "entry_point": "sea_node",
+              "readiness": 92
+            },
+            {
+              "asset_id": "AIR-001",
+              "name": "Strike Wing",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 88
+            },
+            {
+              "asset_id": "AD-001",
+              "name": "Theater Missile Defense Battery",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 90
+            },
+            {
+              "asset_id": "LI-005",
+              "name": "Marine Rifle Battalion",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 95
+            },
+            {
+              "asset_id": "SPE-002",
+              "name": "Cyber Operations Team",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 100
+            }
+          ],
+          "economic_notes": "Highest starting budget of all scenarios — reflects force projection cost. Naval assets expensive to maintain. Must hold port nodes for income or budget degrades fast. SSN is decisive early — protecting it is priority."
+        },
+
+        {
+          "id": "RED",
+          "name": "Amphibious Assault Force",
+          "affiliation": "RED_CN",
+          "entry_points": {
+            "land_node": "Mainland Staging Base",
+            "sea_node": "Assault Fleet Harbor"
+          },
+          "starting_resources": {
+            "dollars_millions": 7500,
+            "income_per_turn_millions": 340,
+            "supply_chain": 78,
+            "stability": 82,
+            "intel": 40
+          },
+          "starting_assets": [
+            {
+              "asset_id": "MCG-004",
+              "name": "Amphibious Assault Ship",
+              "quantity": 2,
+              "entry_point": "sea_node",
+              "readiness": 90
+            },
+            {
+              "asset_id": "TRN-005",
+              "name": "Tank Landing Ship",
+              "quantity": 2,
+              "entry_point": "sea_node",
+              "readiness": 88
+            },
+            {
+              "asset_id": "MBT-003",
+              "name": "Fleet Destroyer",
+              "quantity": 1,
+              "entry_point": "sea_node",
+              "readiness": 92
+            },
+            {
+              "asset_id": "AIR-002",
+              "name": "Stealth Fighter Squadron",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 85
+            },
+            {
+              "asset_id": "ARM-003",
+              "name": "Combined Arms Brigade",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 88
+            },
+            {
+              "asset_id": "SPE-004",
+              "name": "Cyber Team",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "ART-004",
+              "name": "Long Range Rocket Artillery",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 85
+            }
+          ],
+          "economic_notes": "Amphibious package is the game. Two assault ships and two LSTs carry the Combined Arms Brigade across the strait. Destroyer escorts the fleet. If BLUE SSN reaches the fleet before it crosses — RED has no path to victory. Cyber team disrupts BLUE radar and C2 from turn 1 to enable the crossing window."
+        }
+      ]
+    },
+
+    {
+      "id": "SCN-003",
+      "name": "Broken City",
+      "type": "URBAN",
+      "terrain": "URBAN / COASTAL — port cities, chokepoints, urban nodes, infrastructure",
+      "description": "RED irregular and proxy forces seize port infrastructure and urban nodes in a contested coastal region. BLUE coalition forces respond to restore order and control. Urban combat, irregular networks, drone swarms, and fast attack craft define the fight. Economic nodes are high-value targets for both sides.",
+      "turns": 28,
+
+      "nodes": {
+        "BLUE_land_entry": "Coalition Forward Base",
+        "BLUE_sea_entry": "Allied Fleet Anchorage",
+        "RED_land_entry": "Insurgent Safe Zone",
+        "RED_sea_entry": "Coastal Patrol Base",
+        "contested_nodes": ["Central Port", "Oil Terminal", "Government District", "Industrial Zone"],
+        "objective_node": "Government District — DECAPITATION target"
+      },
+
+      "victory_conditions": {
+        "BLUE_objective": "DECAPITATION",
+        "BLUE_win": "Special Forces asset reaches and holds Government District node for 3 consecutive turns — Command Decapitation achieved",
+        "BLUE_loss_conditions": [
+          "Economic Exhaustion",
+          "Supply Chain Collapse",
+          "Political Will Failure",
+          "Proxy Exhaustion — all BLUE irregular assets destroyed",
+          "Survival Failure — Coalition Forward Base falls"
+        ],
+        "RED_win": "Any BLUE loss condition triggers",
+        "RED_secondary_path": "RESOURCE_CONTROL — hold Oil Terminal and Central Port for 10 consecutive turns"
+      },
+
+      "factions": [
+
+        {
+          "id": "BLUE",
+          "name": "Coalition Intervention Force",
+          "affiliation": "BLUE",
+          "entry_points": {
+            "land_node": "Coalition Forward Base",
+            "sea_node": "Allied Fleet Anchorage"
+          },
+          "starting_resources": {
+            "dollars_millions": 7000,
+            "income_per_turn_millions": 310,
+            "supply_chain": 76,
+            "stability": 65,
+            "intel": 30
+          },
+          "starting_assets": [
+            {
+              "asset_id": "MBT-001",
+              "name": "Guided Missile Destroyer",
+              "quantity": 1,
+              "entry_point": "sea_node",
+              "readiness": 90
+            },
+            {
+              "asset_id": "AIR-004",
+              "name": "Attack Helicopter Battalion",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 92
+            },
+            {
+              "asset_id": "LI-001",
+              "name": "Light Infantry Battalion",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 95
+            },
+            {
+              "asset_id": "AD-002",
+              "name": "Medium Range SAM Battery",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 85
+            },
+            {
+              "asset_id": "SPE-001",
+              "name": "Special Forces Team",
+              "quantity": 2,
+              "entry_point": "land_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "SPE-002",
+              "name": "Cyber Operations Team",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "IRR-001",
+              "name": "Urban Resistance Cell",
+              "quantity": 2,
+              "entry_point": "land_node",
+              "readiness": 100
+            }
+          ],
+          "economic_notes": "Lowest starting stability of all scenarios — coalition political friction. Apache and light infantry optimized for urban clearing. Two SOF teams are the primary win condition delivery — protecting them is essential. Urban Resistance Cells provide persistent intel and harassment in city nodes. Must secure Oil Terminal early for income."
+        },
+
+        {
+          "id": "RED",
+          "name": "Irregular Defense Force",
+          "affiliation": "RED_IRR",
+          "entry_points": {
+            "land_node": "Insurgent Safe Zone",
+            "sea_node": "Coastal Patrol Base"
+          },
+          "starting_resources": {
+            "dollars_millions": 3500,
+            "income_per_turn_millions": 180,
+            "supply_chain": 68,
+            "stability": 74,
+            "intel": 45
+          },
+          "starting_assets": [
+            {
+              "asset_id": "MBT-005",
+              "name": "Fast Attack Craft Swarm",
+              "quantity": 2,
+              "entry_point": "sea_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "AIR-005",
+              "name": "Drone Swarm",
+              "quantity": 3,
+              "entry_point": "land_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "LI-002",
+              "name": "Irregular Infantry Brigade",
+              "quantity": 2,
+              "entry_point": "land_node",
+              "readiness": 90
+            },
+            {
+              "asset_id": "ART-005",
+              "name": "Short Range Missile Battery",
+              "quantity": 2,
+              "entry_point": "land_node",
+              "readiness": 95
+            },
+            {
+              "asset_id": "IRR-002",
+              "name": "IED Network",
+              "quantity": 3,
+              "entry_point": "land_node",
+              "readiness": 100
+            },
+            {
+              "asset_id": "IRR-003",
+              "name": "Proxy Militia",
+              "quantity": 2,
+              "entry_point": "land_node",
+              "readiness": 90
+            },
+            {
+              "asset_id": "SPE-005",
+              "name": "HUMINT Cell",
+              "quantity": 1,
+              "entry_point": "land_node",
+              "readiness": 100
+            }
+          ],
+          "economic_notes": "Asymmetric mass. 16 total assets versus BLUE 9 — but cheap and individually weak. Three drone swarms can overwhelm BLUE air defense if concentrated in same turn. IED networks and militia hold urban nodes at near-zero cost. High starting intel reflects deep local knowledge and embedded networks. Must hold Oil Terminal and Central Port or runs dry by turn 12. BLUE economic and stability attrition is the primary win path — not direct confrontation."
+        }
+      ]
+    }
+
+  ]
+}
