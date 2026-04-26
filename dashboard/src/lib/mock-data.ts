@@ -204,7 +204,7 @@ export const SCENARIO_IRON_CORRIDOR: Scenario = {
   strategic_objective: 'RESOURCE_CONTROL',
   summary:             'RED mechanized force pushes through a land corridor toward BLUE-held territory. BLUE holds defensive positions and attrits the advance. Cyber and EW active from turn 1. No significant naval component — landlocked operational area.',
   timeline_hours:      168,
-  turns_total:         28,
+  turns_total:         10,
   location: {
     name:          'Iron Corridor',
     region:        'Rural / Mixed — open plains, forest corridors, river crossings, light urban',
@@ -303,7 +303,7 @@ export const SCENARIO_BLUE_WATER: Scenario = {
   strategic_objective: 'ANNIHILATION',
   summary:             'RED amphibious assault force attempts to cross a contested strait and establish a lodgment. BLUE naval and air forces contest the crossing. Land nodes are secondary — the strait and the beachhead are the fight.',
   timeline_hours:      168,
-  turns_total:         28,
+  turns_total:         10,
   location: {
     name:          'Blue Water Strait',
     region:        'Coastal / Littoral — strait crossing, beach nodes, port facilities, island terrain',
@@ -398,7 +398,7 @@ export const SCENARIO_BROKEN_CITY: Scenario = {
   strategic_objective: 'DECAPITATION',
   summary:             'RED irregular and proxy forces seize port infrastructure and urban nodes in a contested coastal region. BLUE coalition forces respond to restore order and control. Urban combat, IED networks, drone swarms, and fast attack craft define the fight.',
   timeline_hours:      168,
-  turns_total:         28,
+  turns_total:         10,
   location: {
     name:          'Broken City',
     region:        'Urban / Coastal — port cities, chokepoints, urban nodes, infrastructure',
