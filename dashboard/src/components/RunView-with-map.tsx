@@ -11,7 +11,8 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Scenario, GameState, DecisionKey } from '@/lib/schema'
 import type { BoardUnit, UnitMove } from '@/lib/battle-types'
-import { mockAdjudicate } from '@/lib/adjudicate'
+import { adjudicateWithLLM } from '@/lib/adjudicate-real'
+import { GREY_HORIZON_DECISIONS } from '@/lib/mock-data'
 import BattleMap from '@/components/BattleMap'
 
 // ── Seed initial unit positions from scenario forces ──────────────────────
@@ -28,7 +29,7 @@ function seedUnits(scenario: Scenario): BoardUnit[] {
       side:       'BLUE',
       designation: u.designation,
       category:   u.type,
-      position:   [3 + (ri % 4), 4 + ri],
+      position:   [Math.min(3 + ri, 10), Math.min(2 + (ri % 3), 5)],
       readiness:  'FULLY_OPERATIONAL',
       strength:   1.0,
       supply_days_remaining: 5,
@@ -44,7 +45,7 @@ function seedUnits(scenario: Scenario): BoardUnit[] {
       side:       'RED',
       designation: u.designation,
       category:   u.type,
-      position:   [14 + (rj % 4), 16 + rj],
+      position:   [Math.min(11 + rj, 17), Math.min(19 + (rj % 4), 22)],
       readiness:  'FULLY_OPERATIONAL',
       strength:   1.0,
       supply_days_remaining: 5,
@@ -132,8 +133,15 @@ export default function RunViewWithMap({ scenario, gameState, onDecision }: Prop
     }, 800)
 
     try {
-      const nextGS = mockAdjudicate(gameState, selectedKey, note)
-      setLastMoves([])
+      const { gameState: nextGS, units: nextUnits, moves } = await adjudicateWithLLM(
+        gameState,
+        units,
+        selectedKey,
+        note,
+        scenario.summary,
+      )
+      setUnits(nextUnits)
+      setLastMoves(moves)
       onDecision(nextGS)
     } catch (err) {
       setAdjError(err instanceof Error ? err.message : 'Adjudication failed')
@@ -143,7 +151,14 @@ export default function RunViewWithMap({ scenario, gameState, onDecision }: Prop
     }
   }
 
-  const { pending_decision: pending, turn_log, current_turn } = gameState
+  const { pending_decision, turn_log, current_turn, status } = gameState
+  const pending =
+    status === 'running' && current_turn <= scenario.turns_total
+      ? pending_decision ??
+        GREY_HORIZON_DECISIONS[current_turn] ??
+        GREY_HORIZON_DECISIONS[Math.min(current_turn, 10)] ??
+        null
+      : null
   const blueCP = gameState.blue_force.combat_power
   const redCP  = gameState.red_force.combat_power
   const turnsToShow = Array.from({ length: current_turn }, (_, i) => i + 1)

@@ -4,9 +4,6 @@ import { useState } from 'react'
 import type { AppPhase, Scenario, GameState, ScenarioConfig } from '@/lib/schema'
 import {
   ALL_SCENARIOS,
-  SCENARIO_IRON_CORRIDOR,
-  GAME_STATE_IN_PROGRESS,
-  GAME_STATE_COMPLETED,
   GREY_HORIZON_DECISIONS,
 } from '@/lib/mock-data'
 
@@ -85,7 +82,7 @@ function PhaseStepper({ phase, onSelect }: StepperProps) {
 export default function Home() {
   const [phase,     setPhase]     = useState<AppPhase>('setup')
   const [scenario,  setScenario]  = useState<Scenario>(ALL_SCENARIOS[0])
-  const [gameState, setGameState] = useState<GameState>(GAME_STATE_IN_PROGRESS)
+  const [gameState, setGameState] = useState<GameState>(() => buildInitialGameState(ALL_SCENARIOS[0]))
 
   function handleLaunch(config: ScenarioConfig) {
     const base = ALL_SCENARIOS.find((s) => s.id === config.base_scenario_id) ?? ALL_SCENARIOS[0]
@@ -100,7 +97,7 @@ export default function Home() {
 
   function handleDecisionWithMap(next: GameState) {
     setGameState(next)
-    if (next.status === 'ended') setPhase('debrief')
+    if (next.status === 'ended' && next.aar) setPhase('debrief')
   }
 
   function handleRunAgain() {
@@ -108,18 +105,18 @@ export default function Home() {
     setPhase('run')
   }
 
-  // Clicking a tab directly loads demo data for that phase
   function handleTabSelect(p: AppPhase) {
-    if (p === 'run') {
-      // If no active run, jump to the in-progress demo
-      if (phase === 'setup') {
-        setScenario(SCENARIO_IRON_CORRIDOR)
-        setGameState(GAME_STATE_IN_PROGRESS)
+    if (p === 'debrief') {
+      if (gameState.aar) {
+        setPhase('debrief')
       }
-    } else if (p === 'debrief') {
-      setScenario(SCENARIO_IRON_CORRIDOR)
-      setGameState(GAME_STATE_COMPLETED)
+      return
     }
+
+    if (p === 'run' && gameState.status === 'ended') {
+      setGameState(buildInitialGameState(scenario))
+    }
+
     setPhase(p)
   }
 
