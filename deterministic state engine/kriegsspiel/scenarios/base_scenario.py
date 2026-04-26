@@ -4,6 +4,12 @@ from kriegsspiel.engine.state import (
     ControlState, Objective, RunIdentity, TerrainGrid,
     UnitState, WorldState, validate_world_invariants,
 )
+from kriegsspiel.engine.state import (
+    ControlState, Objective, RunIdentity, TerrainGrid,
+    UnitState, WorldState, validate_world_invariants,
+)
+from kriegsspiel.engine.enums import Side, Posture, Readiness
+from kriegsspiel.engine.state import Coord
 from kriegsspiel.engine.enums import TerrainBase, TerrainFeature
 from kriegsspiel.engine.state import TerrainCell
 from kriegsspiel.engine.enums import Side
@@ -103,6 +109,8 @@ class BaseScenario(ABC):
         n_blue: int,
         n_red: int,
         seed: int = 1729,
+        edge_bias: float = 2.0,
+        buffer_fraction: float = 0.2,
     ) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
         map_path = (
             Path(__file__).parent.parent.parent.parent
@@ -114,21 +122,24 @@ class BaseScenario(ABC):
         is_land = ~is_water
 
         land_coords = np.argwhere(is_land)
-        cols = land_coords[:, 1]
-        midpoint = (cols.max() + cols.min()) / 2
+        rows = land_coords[:, 0]
+        row_min, row_max = rows.min(), rows.max()
+        midpoint = (row_max + row_min) / 2
 
-        blue_coords = land_coords[cols <= midpoint]
-        red_coords = land_coords[cols > midpoint]
+        # buffer zone around midpoint — neither side samples from here
+        buffer = (row_max - row_min) * buffer_fraction
+        blue_coords = land_coords[rows >= midpoint + buffer]   # bottom half
+        red_coords = land_coords[rows <= midpoint - buffer]    # top half
 
-        def center_biased_probs(coords: np.ndarray) -> np.ndarray:
-            center = coords.mean(axis=0)
-            dists = np.linalg.norm(coords - center, axis=1)
-            weights = np.exp(-dists / dists.std())
+        def edge_biased_probs(coords: np.ndarray, edge_row: float) -> np.ndarray:
+            # bias toward edge_row (far from midpoint)
+            dists_to_edge = np.abs(coords[:, 0] - edge_row)
+            weights = np.exp(-dists_to_edge / (coords[:, 0].std() / edge_bias))
             return weights / weights.sum()
 
         rng = np.random.default_rng(seed)
-        blue_idxs = rng.choice(len(blue_coords), size=n_blue, replace=False, p=center_biased_probs(blue_coords))
-        red_idxs = rng.choice(len(red_coords), size=n_red, replace=False, p=center_biased_probs(red_coords))
+        blue_idxs = rng.choice(len(blue_coords), size=n_blue, replace=False, p=edge_biased_probs(blue_coords, row_max))
+        red_idxs = rng.choice(len(red_coords), size=n_red, replace=False, p=edge_biased_probs(red_coords, row_min))
 
         return [tuple(blue_coords[i]) for i in blue_idxs], [tuple(red_coords[i]) for i in red_idxs]
 
@@ -153,7 +164,7 @@ class BaseScenario(ABC):
         units = self.build_units()
         objectives = self.build_objectives()
         control = self.build_control(terrain.height, terrain.width)
-        templates = load_template_library()
+        templates = self.load_template_library()
 
         identity = RunIdentity(
             run_id=run_id or f"{self.scenario_id}-001",

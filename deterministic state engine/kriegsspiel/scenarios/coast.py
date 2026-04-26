@@ -13,18 +13,19 @@ class CoastScenario(BaseScenario):
     scenario_id = "coast"
 
     def build_units(self) -> dict[str, UnitState]:
-        units = [
-            # BLUE - left side, defensive posture
-            UnitState(unit_id="BLUE-ARM-001-A", template_id="ARM-001", side=Side.BLUE, affiliation=Affiliation.BLUE, position=(50, 20), strength=1.0, readiness=Readiness.FULLY_OPERATIONAL, supply_days_remaining=3.0, posture=Posture.DEFENSIVE, dug_in=True),
-            UnitState(unit_id="BLUE-ARM-004-A", template_id="ARM-004", side=Side.BLUE, affiliation=Affiliation.BLUE, position=(100, 20), strength=1.0, readiness=Readiness.FULLY_OPERATIONAL, supply_days_remaining=3.0, posture=Posture.DEFENSIVE, dug_in=True),
-            UnitState(unit_id="BLUE-LI-001-A", template_id="LI-001", side=Side.BLUE, affiliation=Affiliation.BLUE, position=(75, 15), strength=1.0, readiness=Readiness.FULLY_OPERATIONAL, supply_days_remaining=4.0, posture=Posture.DEFENSIVE, dug_in=False),
-            UnitState(unit_id="BLUE-LI-005-A", template_id="LI-005", side=Side.BLUE, affiliation=Affiliation.BLUE, position=(150, 15), strength=1.0, readiness=Readiness.FULLY_OPERATIONAL, supply_days_remaining=4.0, posture=Posture.SCREENING, dug_in=False),
+        lib = self.load_template_library()
+        blue_pos, red_pos = self.sample_unit_positions(n_blue=4, n_red=4)
 
-            # RED - right side, offensive posture
-            UnitState(unit_id="RED-ARM-002-A", template_id="ARM-002", side=Side.RED, affiliation=Affiliation.RED_RU, position=(50, 180), strength=1.0, readiness=Readiness.FULLY_OPERATIONAL, supply_days_remaining=2.0, posture=Posture.OFFENSIVE, dug_in=False),
-            UnitState(unit_id="RED-ARM-003-A", template_id="ARM-003", side=Side.RED, affiliation=Affiliation.RED_CN, position=(100, 180), strength=1.0, readiness=Readiness.FULLY_OPERATIONAL, supply_days_remaining=2.0, posture=Posture.OFFENSIVE, dug_in=False),
-            UnitState(unit_id="RED-LI-003-A", template_id="LI-003", side=Side.RED, affiliation=Affiliation.RED_CN, position=(75, 185), strength=1.0, readiness=Readiness.FULLY_OPERATIONAL, supply_days_remaining=1.5, posture=Posture.OFFENSIVE, dug_in=False),
-            UnitState(unit_id="RED-LI-004-A", template_id="LI-004", side=Side.RED, affiliation=Affiliation.RED_RU, position=(150, 185), strength=1.0, readiness=Readiness.FULLY_OPERATIONAL, supply_days_remaining=1.5, posture=Posture.SCREENING, dug_in=False),
+        units = [
+            self.unit_from_template(lib["LI-005"], "BLUE-LI-005-A", Side.BLUE, blue_pos[0], Posture.DEFENSIVE, dug_in=True),
+            self.unit_from_template(lib["ARM-001"], "BLUE-ARM-001-A", Side.BLUE, blue_pos[1], Posture.DEFENSIVE, dug_in=True),
+            self.unit_from_template(lib["ART-001"], "BLUE-ART-001-A", Side.BLUE, blue_pos[2], Posture.DEFENSIVE),
+            self.unit_from_template(lib["AD-001"],  "BLUE-AD-001-A",  Side.BLUE, blue_pos[3], Posture.SCREENING),
+
+            self.unit_from_template(lib["LI-003"], "RED-LI-003-A",  Side.RED, red_pos[0], Posture.OFFENSIVE),
+            self.unit_from_template(lib["ARM-003"], "RED-ARM-003-A", Side.RED, red_pos[1], Posture.OFFENSIVE),
+            self.unit_from_template(lib["ART-004"], "RED-ART-004-A", Side.RED, red_pos[2], Posture.OFFENSIVE),
+            self.unit_from_template(lib["TRN-005"], "RED-TRN-005-A", Side.RED, red_pos[3], Posture.OFFENSIVE),
         ]
         return {u.unit_id: u for u in units}
 
