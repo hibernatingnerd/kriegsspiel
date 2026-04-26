@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Scenario, GameState, DecisionKey } from '@/lib/schema'
 import { GREY_HORIZON_AUDIT, type AuditEntry, type AuditCategory } from '@/lib/mock-audit'
+import MapPanel from './MapPanel'
 
 interface Props {
   scenario: Scenario
@@ -103,7 +104,13 @@ export default function RunView({ scenario, gameState, onDecision }: Props) {
   const turnsToShow = Array.from({ length: current_turn }, (_, i) => i + 1)
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div>
+      <MapPanel
+        scenarioType={scenario.scenario_type}
+        scenarioName={scenario.name}
+        locationName={scenario.location.name}
+      />
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
       {/* ── LEFT: Audit log ── */}
       <div style={{ flex: '0 0 62%' }}>
@@ -332,6 +339,7 @@ export default function RunView({ scenario, gameState, onDecision }: Props) {
           </div>
         ))}
 
+      </div>
       </div>
     </div>
   )
