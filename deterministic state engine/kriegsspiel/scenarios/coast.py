@@ -14,18 +14,22 @@ class CoastScenario(BaseScenario):
 
     def build_units(self) -> dict[str, UnitState]:
         lib = self.load_template_library()
-        blue_pos, red_pos = self.sample_unit_positions(n_blue=4, n_red=4)
+        blue_pos, red_pos = self.sample_unit_positions(n_blue=6, n_red=6)
 
         units = [
             self.unit_from_template(lib["LI-005"], "BLUE-LI-005-A", Side.BLUE, blue_pos[0], Posture.DEFENSIVE, dug_in=True),
-            self.unit_from_template(lib["ARM-001"], "BLUE-ARM-001-A", Side.BLUE, blue_pos[1], Posture.DEFENSIVE, dug_in=True),
-            self.unit_from_template(lib["ART-001"], "BLUE-ART-001-A", Side.BLUE, blue_pos[2], Posture.DEFENSIVE),
-            self.unit_from_template(lib["AD-001"],  "BLUE-AD-001-A",  Side.BLUE, blue_pos[3], Posture.SCREENING),
+            self.unit_from_template(lib["LI-001"], "BLUE-LI-001-A", Side.BLUE, blue_pos[1], Posture.DEFENSIVE, dug_in=False),
+            self.unit_from_template(lib["ARM-001"], "BLUE-ARM-001-A", Side.BLUE, blue_pos[2], Posture.DEFENSIVE, dug_in=True),
+            self.unit_from_template(lib["ARM-004"], "BLUE-ARM-004-A", Side.BLUE, blue_pos[3], Posture.DEFENSIVE, dug_in=True),
+            self.unit_from_template(lib["ART-001"], "BLUE-ART-001-A", Side.BLUE, blue_pos[4], Posture.DEFENSIVE),
+            self.unit_from_template(lib["AD-001"],  "BLUE-AD-001-A",  Side.BLUE, blue_pos[5], Posture.SCREENING),
 
             self.unit_from_template(lib["LI-003"], "RED-LI-003-A",  Side.RED, red_pos[0], Posture.OFFENSIVE),
-            self.unit_from_template(lib["ARM-003"], "RED-ARM-003-A", Side.RED, red_pos[1], Posture.OFFENSIVE),
-            self.unit_from_template(lib["ART-004"], "RED-ART-004-A", Side.RED, red_pos[2], Posture.OFFENSIVE),
-            self.unit_from_template(lib["TRN-005"], "RED-TRN-005-A", Side.RED, red_pos[3], Posture.OFFENSIVE),
+            self.unit_from_template(lib["LI-004"], "RED-LI-004-A",  Side.RED, red_pos[1], Posture.OFFENSIVE),
+            self.unit_from_template(lib["ARM-003"], "RED-ARM-003-A", Side.RED, red_pos[2], Posture.OFFENSIVE),
+            self.unit_from_template(lib["ARM-002"], "RED-ARM-002-A", Side.RED, red_pos[3], Posture.OFFENSIVE),
+            self.unit_from_template(lib["ART-004"], "RED-ART-004-A", Side.RED, red_pos[4], Posture.OFFENSIVE),
+            self.unit_from_template(lib["TRN-005"], "RED-TRN-005-A", Side.RED, red_pos[5], Posture.OFFENSIVE),
         ]
         return {u.unit_id: u for u in units}
 
