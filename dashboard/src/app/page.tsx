@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { AppPhase, Scenario, GameState, ScenarioConfig, DecisionKey } from '@/lib/schema'
+import type { AppPhase, Scenario, GameState, ScenarioConfig } from '@/lib/schema'
 import {
   ALL_SCENARIOS,
   SCENARIO_IRON_CORRIDOR,
@@ -10,9 +10,8 @@ import {
   GREY_HORIZON_DECISIONS,
 } from '@/lib/mock-data'
 
-import { mockAdjudicate } from '@/lib/adjudicate'
 import SetupView   from '@/components/SetupView'
-import RunView     from '@/components/RunView'
+import RunViewWithMap from '@/components/RunView-with-map'
 import DebriefView from '@/components/DebriefView'
 
 const NOW  = '2026-04-25 17:42 UTC'
@@ -99,8 +98,7 @@ export default function Home() {
     setPhase('run')
   }
 
-  function handleDecision(key: DecisionKey, note: string) {
-    const next = mockAdjudicate(gameState, key, note)
+  function handleDecisionWithMap(next: GameState) {
     setGameState(next)
     if (next.status === 'ended') setPhase('debrief')
   }
@@ -143,10 +141,10 @@ export default function Home() {
       )}
 
       {phase === 'run' && (
-        <RunView
+        <RunViewWithMap
           scenario={scenario}
           gameState={gameState}
-          onDecision={handleDecision}
+          onDecision={handleDecisionWithMap}
         />
       )}
 
