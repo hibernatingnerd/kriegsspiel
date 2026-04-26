@@ -41,6 +41,13 @@ export default function DebriefView({ scenario, gameState, onRunAgain, onNewScen
             <span className="title">AFTER-ACTION REVIEW //</span>
             <span style={{ marginLeft: 10 }}>{scenario.name}</span>
             <span className="pill" style={{ marginLeft: 10 }}>{scenario.run_id}</span>
+            <span
+              className="pill warn"
+              style={{ marginLeft: 10 }}
+              title="Locally synthesized — backend /api/aar endpoint not yet implemented"
+            >
+              STUB AAR
+            </span>
           </div>
           <div className="dim" style={{ fontSize: 11 }}>
             RUN-{gameState.run_id} · {outcome.turns_played} turns · GEN. {aar.generated_in_seconds}s

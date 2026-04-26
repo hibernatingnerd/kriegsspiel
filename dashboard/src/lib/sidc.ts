@@ -3,7 +3,8 @@
 
 import type { SideLabel } from './schema'
 
-// Mirrors backend kriegsspiel/engine/enums.py::Category
+// Mirrors backend kriegsspiel/engine/enums.py::Category. Backend may also
+// send arbitrary strings; deriveSidc falls back to MANEUVER for unknowns.
 export type UnitCategory =
   | 'LIGHT_INFANTRY'
   | 'ARMOR'
@@ -26,7 +27,7 @@ export type UnitCategory =
 export type EchelonCode = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K'
 
 // Function ID (positions 5-10) — the inner icon.
-const FUNCTION_ID: Record<UnitCategory, { dim: 'G' | 'A' | 'S'; fn: string }> = {
+const FUNCTION_ID: Record<string, { dim: 'G' | 'A' | 'S'; fn: string }> = {
   LIGHT_INFANTRY:  { dim: 'G', fn: 'UCI---' },
   ARMOR:           { dim: 'G', fn: 'UCA---' },
   ARTILLERY:       { dim: 'G', fn: 'UCF---' },
@@ -44,14 +45,16 @@ const FUNCTION_ID: Record<UnitCategory, { dim: 'G' | 'A' | 'S'; fn: string }> = 
 }
 
 export interface SidcInput {
-  side: SideLabel
-  category: UnitCategory
+  // Accept both schema casing ('blue'/'red') and engine casing ('BLUE'/'RED').
+  side: SideLabel | 'BLUE' | 'RED' | 'NEUTRAL'
+  category: string
   echelon?: EchelonCode
 }
 
 export function deriveSidc({ side, category, echelon = 'F' }: SidcInput): string {
-  const aff = side === 'blue' ? 'F' : 'H'           // friend / hostile
-  const { dim, fn } = FUNCTION_ID[category]
+  const isBlue = side === 'blue' || side === 'BLUE'
+  const aff = isBlue ? 'F' : 'H'                       // friend / hostile
+  const { dim, fn } = FUNCTION_ID[category] ?? FUNCTION_ID.MANEUVER
   // 15 chars: scheme + affiliation + dim + status + fn(6) + echelon + reserved(3) + reserved
   return `S${aff}${dim}P${fn}-${echelon}-----`.padEnd(15, '-').slice(0, 15)
 }

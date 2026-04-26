@@ -2,23 +2,32 @@
 // supplies real GameState.units. Delete this file + its single import in
 // RunView.tsx to remove.
 
-import type { GridUnit } from './schema'
-import { deriveSidc } from './sidc'
+import type { BoardUnit } from './battle-types'
 
 interface Frame {
   minTurn: number  // applies for turns >= minTurn (until next frame)
-  units: GridUnit[]
+  units: BoardUnit[]
 }
 
-const SIDC = {
-  bArmor:  deriveSidc({ side: 'blue', category: 'ARMOR',          echelon: 'H' }),
-  bInf:    deriveSidc({ side: 'blue', category: 'LIGHT_INFANTRY', echelon: 'H' }),
-  bArty:   deriveSidc({ side: 'blue', category: 'ARTILLERY',      echelon: 'F' }),
-  bSus:    deriveSidc({ side: 'blue', category: 'SUSTAINMENT',    echelon: 'F' }),
-  rArmor:  deriveSidc({ side: 'red',  category: 'ARMOR',          echelon: 'I' }),
-  rInf:    deriveSidc({ side: 'red',  category: 'LIGHT_INFANTRY', echelon: 'I' }),
-  rRecon:  deriveSidc({ side: 'red',  category: 'SPECIAL',        echelon: 'E' }),
-  rAd:     deriveSidc({ side: 'red',  category: 'AIR_DEFENSE',    echelon: 'F' }),
+function unit(
+  id: string,
+  side: 'BLUE' | 'RED',
+  designation: string,
+  category: string,
+  row: number,
+  col: number,
+): BoardUnit {
+  return {
+    unit_id: id,
+    side,
+    designation,
+    category,
+    position: [row, col],
+    readiness: 'FULLY_OPERATIONAL',
+    strength: 1.0,
+    supply_days_remaining: 5,
+    posture: side === 'BLUE' ? 'DEFENSIVE' : 'OFFENSIVE',
+  }
 }
 
 // Keyframes: blue defends south, red attacks from north, contact mid-map,
@@ -27,71 +36,71 @@ const FRAMES: Frame[] = [
   {
     minTurn: 1,
     units: [
-      { id: 'b1', side: 'blue', label: '1 BCT', row: 150, col:  60, sidc: SIDC.bArmor },
-      { id: 'b2', side: 'blue', label: '2 BCT', row: 145, col: 100, sidc: SIDC.bInf   },
-      { id: 'b3', side: 'blue', label: 'ARTY',  row: 170, col:  90, sidc: SIDC.bArty  },
-      { id: 'b4', side: 'blue', label: 'SUS',   row: 180, col:  70, sidc: SIDC.bSus   },
-      { id: 'r1', side: 'red',  label: '1 MRD', row:  35, col:  80, sidc: SIDC.rArmor },
-      { id: 'r2', side: 'red',  label: '2 MRD', row:  30, col: 130, sidc: SIDC.rInf   },
-      { id: 'r3', side: 'red',  label: 'RECON', row:  55, col: 110, sidc: SIDC.rRecon },
-      { id: 'r4', side: 'red',  label: 'AD',    row:  20, col:  95, sidc: SIDC.rAd    },
+      unit('b1', 'BLUE', '1 BCT', 'ARMOR',          150,  60),
+      unit('b2', 'BLUE', '2 BCT', 'LIGHT_INFANTRY', 145, 100),
+      unit('b3', 'BLUE', 'ARTY',  'ARTILLERY',      170,  90),
+      unit('b4', 'BLUE', 'SUS',   'SUSTAINMENT',    180,  70),
+      unit('r1', 'RED',  '1 MRD', 'ARMOR',           35,  80),
+      unit('r2', 'RED',  '2 MRD', 'LIGHT_INFANTRY',  30, 130),
+      unit('r3', 'RED',  'RECON', 'SPECIAL',         55, 110),
+      unit('r4', 'RED',  'AD',    'AIR_DEFENSE',     20,  95),
     ],
   },
   {
     minTurn: 6,
     units: [
-      { id: 'b1', side: 'blue', label: '1 BCT', row: 130, col:  70, sidc: SIDC.bArmor },
-      { id: 'b2', side: 'blue', label: '2 BCT', row: 125, col: 105, sidc: SIDC.bInf   },
-      { id: 'b3', side: 'blue', label: 'ARTY',  row: 165, col:  95, sidc: SIDC.bArty  },
-      { id: 'b4', side: 'blue', label: 'SUS',   row: 175, col:  75, sidc: SIDC.bSus   },
-      { id: 'r1', side: 'red',  label: '1 MRD', row:  70, col:  90, sidc: SIDC.rArmor },
-      { id: 'r2', side: 'red',  label: '2 MRD', row:  65, col: 130, sidc: SIDC.rInf   },
-      { id: 'r3', side: 'red',  label: 'RECON', row:  90, col: 115, sidc: SIDC.rRecon },
-      { id: 'r4', side: 'red',  label: 'AD',    row:  40, col:  95, sidc: SIDC.rAd    },
+      unit('b1', 'BLUE', '1 BCT', 'ARMOR',          130,  70),
+      unit('b2', 'BLUE', '2 BCT', 'LIGHT_INFANTRY', 125, 105),
+      unit('b3', 'BLUE', 'ARTY',  'ARTILLERY',      165,  95),
+      unit('b4', 'BLUE', 'SUS',   'SUSTAINMENT',    175,  75),
+      unit('r1', 'RED',  '1 MRD', 'ARMOR',           70,  90),
+      unit('r2', 'RED',  '2 MRD', 'LIGHT_INFANTRY',  65, 130),
+      unit('r3', 'RED',  'RECON', 'SPECIAL',         90, 115),
+      unit('r4', 'RED',  'AD',    'AIR_DEFENSE',     40,  95),
     ],
   },
   {
     minTurn: 12,
     units: [
-      { id: 'b1', side: 'blue', label: '1 BCT', row: 110, col:  85, sidc: SIDC.bArmor },
-      { id: 'b2', side: 'blue', label: '2 BCT', row: 105, col: 115, sidc: SIDC.bInf   },
-      { id: 'b3', side: 'blue', label: 'ARTY',  row: 155, col: 100, sidc: SIDC.bArty  },
-      { id: 'b4', side: 'blue', label: 'SUS',   row: 170, col:  80, sidc: SIDC.bSus   },
-      { id: 'r1', side: 'red',  label: '1 MRD', row:  95, col:  95, sidc: SIDC.rArmor },
-      { id: 'r2', side: 'red',  label: '2 MRD', row:  90, col: 130, sidc: SIDC.rInf   },
-      { id: 'r3', side: 'red',  label: 'RECON', row: 115, col: 120, sidc: SIDC.rRecon },
-      { id: 'r4', side: 'red',  label: 'AD',    row:  55, col: 100, sidc: SIDC.rAd    },
+      unit('b1', 'BLUE', '1 BCT', 'ARMOR',          110,  85),
+      unit('b2', 'BLUE', '2 BCT', 'LIGHT_INFANTRY', 105, 115),
+      unit('b3', 'BLUE', 'ARTY',  'ARTILLERY',      155, 100),
+      unit('b4', 'BLUE', 'SUS',   'SUSTAINMENT',    170,  80),
+      unit('r1', 'RED',  '1 MRD', 'ARMOR',           95,  95),
+      unit('r2', 'RED',  '2 MRD', 'LIGHT_INFANTRY',  90, 130),
+      unit('r3', 'RED',  'RECON', 'SPECIAL',        115, 120),
+      unit('r4', 'RED',  'AD',    'AIR_DEFENSE',     55, 100),
     ],
   },
   {
     minTurn: 18,
     units: [
-      { id: 'b1', side: 'blue', label: '1 BCT', row:  90, col:  95, sidc: SIDC.bArmor },
-      { id: 'b2', side: 'blue', label: '2 BCT', row:  95, col: 125, sidc: SIDC.bInf   },
-      { id: 'b3', side: 'blue', label: 'ARTY',  row: 145, col: 105, sidc: SIDC.bArty  },
-      { id: 'b4', side: 'blue', label: 'SUS',   row: 165, col:  85, sidc: SIDC.bSus   },
-      { id: 'r1', side: 'red',  label: '1 MRD', row: 110, col: 100, sidc: SIDC.rArmor },
-      { id: 'r2', side: 'red',  label: '2 MRD', row: 105, col: 135, sidc: SIDC.rInf   },
-      { id: 'r3', side: 'red',  label: 'RECON', row: 130, col: 125, sidc: SIDC.rRecon },
-      { id: 'r4', side: 'red',  label: 'AD',    row:  70, col: 105, sidc: SIDC.rAd    },
+      unit('b1', 'BLUE', '1 BCT', 'ARMOR',           90,  95),
+      unit('b2', 'BLUE', '2 BCT', 'LIGHT_INFANTRY',  95, 125),
+      unit('b3', 'BLUE', 'ARTY',  'ARTILLERY',      145, 105),
+      unit('b4', 'BLUE', 'SUS',   'SUSTAINMENT',    165,  85),
+      unit('r1', 'RED',  '1 MRD', 'ARMOR',          110, 100),
+      unit('r2', 'RED',  '2 MRD', 'LIGHT_INFANTRY', 105, 135),
+      unit('r3', 'RED',  'RECON', 'SPECIAL',        130, 125),
+      unit('r4', 'RED',  'AD',    'AIR_DEFENSE',     70, 105),
     ],
   },
   {
     minTurn: 24,
     units: [
-      { id: 'b1', side: 'blue', label: '1 BCT', row:  75, col: 100, sidc: SIDC.bArmor },
-      { id: 'b2', side: 'blue', label: '2 BCT', row:  80, col: 130, sidc: SIDC.bInf   },
-      { id: 'b3', side: 'blue', label: 'ARTY',  row: 135, col: 110, sidc: SIDC.bArty  },
-      { id: 'b4', side: 'blue', label: 'SUS',   row: 160, col:  90, sidc: SIDC.bSus   },
-      { id: 'r1', side: 'red',  label: '1 MRD', row: 120, col: 105, sidc: SIDC.rArmor },
-      { id: 'r2', side: 'red',  label: '2 MRD', row: 115, col: 140, sidc: SIDC.rInf   },
-      { id: 'r3', side: 'red',  label: 'RECON', row: 140, col: 130, sidc: SIDC.rRecon },
-      { id: 'r4', side: 'red',  label: 'AD',    row:  80, col: 110, sidc: SIDC.rAd    },
+      unit('b1', 'BLUE', '1 BCT', 'ARMOR',           75, 100),
+      unit('b2', 'BLUE', '2 BCT', 'LIGHT_INFANTRY',  80, 130),
+      unit('b3', 'BLUE', 'ARTY',  'ARTILLERY',      135, 110),
+      unit('b4', 'BLUE', 'SUS',   'SUSTAINMENT',    160,  90),
+      unit('r1', 'RED',  '1 MRD', 'ARMOR',          120, 105),
+      unit('r2', 'RED',  '2 MRD', 'LIGHT_INFANTRY', 115, 140),
+      unit('r3', 'RED',  'RECON', 'SPECIAL',        140, 130),
+      unit('r4', 'RED',  'AD',    'AIR_DEFENSE',     80, 110),
     ],
   },
 ]
 
-export function getStubUnits(turn: number): GridUnit[] {
+export function getStubUnits(turn: number): BoardUnit[] {
   let pick = FRAMES[0]
   for (const f of FRAMES) {
     if (f.minTurn <= turn) pick = f

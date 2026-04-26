@@ -13,7 +13,7 @@ import type { Scenario, GameState, DecisionKey } from '@/lib/schema'
 import type { BoardUnit, UnitMove } from '@/lib/battle-types'
 import { adjudicateWithLLM } from '@/lib/adjudicate-real'
 import { GREY_HORIZON_DECISIONS } from '@/lib/mock-data'
-import BattleMap from '@/components/BattleMap'
+import MapPanel from '@/components/MapPanel'
 
 // ── Seed initial unit positions from scenario forces ──────────────────────
 // In production these come from the Python backend's WorldState serialisation.
@@ -138,7 +138,7 @@ export default function RunViewWithMap({ scenario, gameState, onDecision }: Prop
         units,
         selectedKey,
         note,
-        scenario.summary,
+        scenario,
       )
       setUnits(nextUnits)
       setLastMoves(moves)
@@ -167,17 +167,16 @@ export default function RunViewWithMap({ scenario, gameState, onDecision }: Prop
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* ── Battle Map (full width, snapshot per iteration) ── */}
-      <div className="card" style={{ padding: '12px 16px' }}>
-        <div className="card-header" style={{ marginBottom: 10 }}>
-          <span className="title">TACTICAL MAP</span>
-          <span className="dim" style={{ fontSize: 11 }}>
-            {units.filter(u => u.readiness !== 'DESTROYED').length} units active
-          </span>
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <BattleMap units={units} lastMoves={lastMoves} turn={current_turn} />
-        </div>
-      </div>
+      <MapPanel
+        scenarioType={scenario.scenario_type}
+        scenarioName={scenario.name}
+        locationName={scenario.location.name}
+        units={units}
+        lastMoves={lastMoves}
+        turn={current_turn}
+        gridRows={20}
+        gridCols={24}
+      />
 
       {/* ── Bottom row: Audit log + Status/Decision ── */}
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>

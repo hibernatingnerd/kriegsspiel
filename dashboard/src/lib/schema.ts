@@ -48,18 +48,6 @@ export interface Unit {
   notes: string
 }
 
-// Map placement (grid coords). Backend will populate row/col per turn.
-// `sidc` is a MIL-STD-2525C symbol identification code for milsymbol.
-// If absent, MapPanel falls back to a generic friendly/hostile unit symbol.
-export interface GridUnit {
-  id: string
-  side: SideLabel
-  row: number
-  col: number
-  label: string
-  sidc?: string
-}
-
 export interface Force {
   side: SideLabel
   name: string

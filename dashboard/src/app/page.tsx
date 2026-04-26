@@ -10,9 +10,8 @@ import {
   GREY_HORIZON_DECISIONS,
 } from '@/lib/mock-data'
 
-import { mockAdjudicate } from '@/lib/adjudicate'
 import SetupView   from '@/components/SetupView'
-import RunView     from '@/components/RunView'
+import RunView     from '@/components/RunView-with-map'
 import DebriefView from '@/components/DebriefView'
 
 const NOW  = '2026-04-25 17:42 UTC'
@@ -99,8 +98,7 @@ export default function Home() {
     setPhase('run')
   }
 
-  function handleDecision(key: DecisionKey, note: string) {
-    const next = mockAdjudicate(gameState, key, note)
+  function handleDecision(next: GameState) {
     setGameState(next)
     if (next.status === 'ended') setPhase('debrief')
   }

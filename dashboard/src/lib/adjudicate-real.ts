@@ -1,4 +1,5 @@
-import type { GameState, DecisionKey, TurnRecord, PendingDecision } from './schema'
+import type { GameState, DecisionKey, TurnRecord, PendingDecision, Scenario } from './schema'
+import { synthesizeAAR } from './aar-stub'
 import type {
   BoardUnit,
   ControlStateSnapshot,
@@ -237,7 +238,7 @@ export async function adjudicateWithLLM(
   units: BoardUnit[],
   key: DecisionKey,
   note: string,
-  scenarioSummary: string,
+  scenario: Scenario,
 ): Promise<AdjudicateResult> {
   const req: WorldStateBattleIterationRequest = {
     run_id: gameState.run_id,
@@ -245,7 +246,7 @@ export async function adjudicateWithLLM(
     blue_order_key: key,
     blue_order_label: key,
     commander_note: note,
-    scenario_summary: scenarioSummary,
+    scenario_summary: scenario.summary,
     world_state: buildWorldStateSnapshot(gameState, units),
   }
 
@@ -268,7 +269,7 @@ export async function adjudicateWithLLM(
 
   const hasTerminalOutcome = res.game_over && res.outcome !== null
   const isEnded = hasTerminalOutcome
-  const nextGS: GameState = {
+  const interimGS: GameState = {
     ...gameState,
     status: isEnded ? 'ended' : 'running',
     current_turn: gameState.current_turn + 1,
@@ -279,8 +280,14 @@ export async function adjudicateWithLLM(
     pending_decision: isEnded
       ? null
       : nextDecision(gameState.current_turn) ?? fallbackDecision(gameState.current_turn + 1),
-    aar: isEnded ? gameState.aar : null,
+    aar: null,
   }
+
+  // STUB: synthesize AAR locally on the frontend until the backend exposes
+  // /api/aar. Remove this block when the real endpoint lands.
+  const nextGS: GameState = isEnded && res.outcome
+    ? { ...interimGS, aar: synthesizeAAR(interimGS, scenario, res.outcome) }
+    : interimGS
 
   return { gameState: nextGS, units: updatedUnits, moves: res.unit_moves }
 }

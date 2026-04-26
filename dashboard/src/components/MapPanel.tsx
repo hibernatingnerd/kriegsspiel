@@ -2,13 +2,20 @@
 
 import { useMemo, useState } from 'react'
 import ms from 'milsymbol'
-import type { ScenarioType, GridUnit, SideLabel } from '@/lib/schema'
+import type { ScenarioType } from '@/lib/schema'
+import type { BoardUnit, UnitMove, ReadinessLevel } from '@/lib/battle-types'
+import { deriveSidc } from '@/lib/sidc'
 
 interface Props {
   scenarioType: ScenarioType
   scenarioName: string
   locationName: string
-  units?: GridUnit[]
+  units?: BoardUnit[]
+  lastMoves?: UnitMove[]
+  turn?: number
+  // Optional grid override. Falls back to GRID_DIMS[scenarioType] (200x200 / 300x300).
+  gridRows?: number
+  gridCols?: number
 }
 
 const BACKDROP: Record<ScenarioType, string> = {
@@ -28,10 +35,18 @@ const GRID_DIMS: Record<ScenarioType, { rows: number; cols: number }> = {
 
 const GRID_STEP = 20  // draw a faint line every N cells
 
-// Generic fallback SIDCs when the backend hasn't provided one yet.
-const FALLBACK_SIDC: Record<SideLabel, string> = {
-  blue: 'SFGPU-----H----',
-  red:  'SHGPU-----H----',
+const READINESS_OPACITY: Record<ReadinessLevel, number> = {
+  FULLY_OPERATIONAL: 1.0,
+  DEGRADED:          0.85,
+  SUPPRESSED:        0.6,
+  DESTROYED:         0.25,
+}
+
+const MOVE_COLOR: Record<UnitMove['action'], string> = {
+  ASSAULT:  'var(--red)',
+  WITHDRAW: 'var(--amber)',
+  MOVE:     'var(--blue)',
+  HOLD:     'var(--dim)',
 }
 
 interface RenderedSymbol {
@@ -60,31 +75,52 @@ export default function MapPanel({
   scenarioName,
   locationName,
   units = [],
+  lastMoves = [],
+  turn,
+  gridRows,
+  gridCols,
 }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [showGrid, setShowGrid] = useState(true)
   const src = BACKDROP[scenarioType]
-  const { rows, cols } = GRID_DIMS[scenarioType]
+  const rows = gridRows ?? GRID_DIMS[scenarioType].rows
+  const cols = gridCols ?? GRID_DIMS[scenarioType].cols
 
   // Symbol render scale: ~12 cells tall on a 200-cell grid.
   const symbolCellSize = Math.max(rows, cols) * 0.06
 
-  // Memoize per-unit symbol renders so we only recompute when sidc/label change.
+  // Memoize per-unit symbol renders so we only recompute when units change.
   const rendered = useMemo(() => {
     return units.map((u) => {
-      const sidc = u.sidc ?? FALLBACK_SIDC[u.side]
+      const sidc = deriveSidc({
+        side: u.side,
+        category: u.category,
+        echelon: 'F',
+      })
       try {
-        return { unit: u, render: renderSymbol(sidc, u.label) }
+        return { unit: u, render: renderSymbol(sidc, u.designation) }
       } catch {
         return { unit: u, render: null }
       }
     })
   }, [units])
 
+  const movedIds = useMemo(
+    () => new Set(
+      lastMoves
+        .filter(m => m.from_position[0] !== m.to_position[0] || m.from_position[1] !== m.to_position[1])
+        .map(m => m.unit_id),
+    ),
+    [lastMoves],
+  )
+
   const vLines: number[] = []
   for (let c = GRID_STEP; c < cols; c += GRID_STEP) vLines.push(c)
   const hLines: number[] = []
   for (let r = GRID_STEP; r < rows; r += GRID_STEP) hLines.push(r)
+
+  const activeBlue = units.filter((u) => u.side === 'BLUE' && u.readiness !== 'DESTROYED').length
+  const activeRed  = units.filter((u) => u.side === 'RED'  && u.readiness !== 'DESTROYED').length
 
   return (
     <div className="card" style={{ marginBottom: 16 }}>
@@ -96,7 +132,12 @@ export default function MapPanel({
         <div>
           <span className="title">MAP</span>
           <span className="dim" style={{ marginLeft: 12, fontSize: 11 }}>
-            {locationName} · {scenarioType} · {rows}×{cols} · {units.length} units
+            {locationName} · {scenarioType} · {rows}×{cols}
+            {turn !== undefined && ` · T${turn}`}
+            {' · '}
+            <span style={{ color: 'var(--blue)' }}>{activeBlue}B</span>
+            {' '}
+            <span style={{ color: 'var(--red)' }}>{activeRed}R</span>
           </span>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -155,6 +196,22 @@ export default function MapPanel({
               pointerEvents: 'none',
             }}
           >
+            <defs>
+              {(['ASSAULT', 'WITHDRAW', 'MOVE', 'HOLD'] as const).map((act) => (
+                <marker
+                  key={act}
+                  id={`arrow-${act}`}
+                  markerWidth={6}
+                  markerHeight={6}
+                  refX={5}
+                  refY={3}
+                  orient="auto"
+                >
+                  <path d="M0,0 L0,6 L6,3 z" fill={MOVE_COLOR[act]} opacity={0.85} />
+                </marker>
+              ))}
+            </defs>
+
             {showGrid && (
               <g stroke="rgba(255,210,74,0.18)" strokeWidth={0.5}>
                 {vLines.map((c) => (
@@ -167,23 +224,58 @@ export default function MapPanel({
               </g>
             )}
 
+            {/* Move arrows from last adjudication */}
+            {lastMoves.map((m, i) => {
+              const [r0, c0] = m.from_position
+              const [r1, c1] = m.to_position
+              if (r0 === r1 && c0 === c1) return null
+              return (
+                <line
+                  key={`mv${i}`}
+                  x1={c0 + 0.5}
+                  y1={r0 + 0.5}
+                  x2={c1 + 0.5}
+                  y2={r1 + 0.5}
+                  stroke={MOVE_COLOR[m.action]}
+                  strokeWidth={Math.max(rows, cols) * 0.004}
+                  strokeDasharray={`${Math.max(rows, cols) * 0.012} ${Math.max(rows, cols) * 0.006}`}
+                  opacity={0.85}
+                  markerEnd={`url(#arrow-${m.action})`}
+                />
+              )
+            })}
+
+            {/* Unit symbols */}
             {rendered.map(({ unit, render }) => {
               if (!render) return null
               const aspect = render.width / render.height
               const w = symbolCellSize * aspect
               const h = symbolCellSize
-              // milsymbol anchor is in its own coord space; normalize then place.
               const ax = (render.anchorX / render.width) * w
               const ay = (render.anchorY / render.height) * h
+              const opacity = READINESS_OPACITY[unit.readiness]
+              const moved = movedIds.has(unit.unit_id)
               return (
-                <image
-                  key={unit.id}
-                  href={render.dataUrl}
-                  x={unit.col + 0.5 - ax}
-                  y={unit.row + 0.5 - ay}
-                  width={w}
-                  height={h}
-                />
+                <g key={unit.unit_id} opacity={opacity}>
+                  {moved && (
+                    <circle
+                      cx={unit.position[1] + 0.5}
+                      cy={unit.position[0] + 0.5}
+                      r={symbolCellSize * 0.55}
+                      fill="none"
+                      stroke="var(--accent)"
+                      strokeWidth={Math.max(rows, cols) * 0.003}
+                      opacity={0.6}
+                    />
+                  )}
+                  <image
+                    href={render.dataUrl}
+                    x={unit.position[1] + 0.5 - ax}
+                    y={unit.position[0] + 0.5 - ay}
+                    width={w}
+                    height={h}
+                  />
+                </g>
               )
             })}
           </svg>
