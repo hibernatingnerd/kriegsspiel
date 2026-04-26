@@ -425,7 +425,7 @@ class WorldState(BaseModel):
     side_posture: dict[Side, str] = Field(
         default_factory=lambda: {Side.BLUE: "STANDARD", Side.RED: "STANDARD"}
     )
-    unit_decision_list: list
+    unit_decision_list: list = Field(default_factory=list)
 
     @staticmethod
     def cell_key(coord: Coord) -> str:
