@@ -176,6 +176,7 @@ export interface GameState {
   scenario_id: string
   run_id: string
   status: ScenarioStatus
+  outcome: OutcomeLabel | null
   current_turn: number
   next_checkin_iso: string | null
   blue_force: Force
@@ -190,4 +191,6 @@ export interface GameState {
 export interface ScenarioConfig {
   base_scenario_id: string
   label_override: string
+  mode: 'manual' | 'auto'
+  auto_turns: number
 }

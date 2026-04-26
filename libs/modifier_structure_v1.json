@@ -1,0 +1,205 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Global modifier structure. Defines how Stability, Supply Chain, and Intel status affect income, costs, and operational roll bonuses. All modifiers are multiplicative on base costs or additive on D20 rolls unless noted.",
+    "application_note": "Modifiers apply every turn automatically based on current stat values. Brackets are checked at turn start. Multiple modifiers stack."
+  },
+
+  "stability_modifiers": {
+    "description": "Stability represents political will and battlefield morale. As it degrades, income falls, costs rise, and units begin to underperform. Recovery is slow and expensive.",
+    "brackets": [
+      {
+        "range": "81-100",
+        "label": "STRONG",
+        "income_modifier": 1.10,
+        "all_action_costs_modifier": 1.00,
+        "creation_costs_modifier": 1.00,
+        "unit_roll_modifier": "+1",
+        "notes": "Elevated political support and morale. Income bonus reflects strong domestic backing and allied confidence."
+      },
+      {
+        "range": "61-80",
+        "label": "NOMINAL",
+        "income_modifier": 1.00,
+        "all_action_costs_modifier": 1.00,
+        "creation_costs_modifier": 1.00,
+        "unit_roll_modifier": "0",
+        "notes": "Baseline. No modifiers applied."
+      },
+      {
+        "range": "41-60",
+        "label": "STRAINED",
+        "income_modifier": 0.90,
+        "all_action_costs_modifier": 1.10,
+        "creation_costs_modifier": 1.10,
+        "unit_roll_modifier": "-1",
+        "notes": "Political friction and declining morale. Recruiting and procurement face delays. Units begin underperforming under pressure."
+      },
+      {
+        "range": "21-40",
+        "label": "DEGRADED",
+        "income_modifier": 0.75,
+        "all_action_costs_modifier": 1.25,
+        "creation_costs_modifier": 1.30,
+        "unit_roll_modifier": "-3",
+        "notes": "Serious morale and political crisis. Significant cost inflation across all operations. Units unreliable under stress. Income loss reflects capital flight, ally withdrawal, reduced tax base."
+      },
+      {
+        "range": "1-20",
+        "label": "CRITICAL",
+        "income_modifier": 0.50,
+        "all_action_costs_modifier": 1.50,
+        "creation_costs_modifier": 1.75,
+        "unit_roll_modifier": "-5",
+        "notes": "Near-collapse. Economy hemorrhaging. Units prone to rout. Creation of new assets severely hampered. One more major defeat or loss event likely triggers Political Will Failure."
+      },
+      {
+        "range": "0",
+        "label": "COLLAPSED",
+        "income_modifier": 0,
+        "all_action_costs_modifier": null,
+        "creation_costs_modifier": null,
+        "unit_roll_modifier": null,
+        "notes": "LOSS CONDITION — Political Will Failure triggered. Game ends."
+      }
+    ]
+  },
+
+  "supply_chain_modifiers": {
+    "description": "Supply Chain represents logistics health — fuel, ammunition pipelines, transport infrastructure, maintenance capacity. Degraded SC makes everything cost more and move slower. At zero, units cannot act.",
+    "brackets": [
+      {
+        "range": "81-100",
+        "label": "OPTIMAL",
+        "move_cost_modifier": 0.90,
+        "attack_cost_modifier": 0.90,
+        "reload_cost_modifier": 0.85,
+        "creation_cost_modifier": 0.95,
+        "unit_roll_modifier": "+2",
+        "move_speed_modifier": 1.00,
+        "notes": "Well-supplied force. Slight cost reduction reflects efficient logistics. Reload and resupply faster than baseline."
+      },
+      {
+        "range": "61-80",
+        "label": "NOMINAL",
+        "move_cost_modifier": 1.00,
+        "attack_cost_modifier": 1.00,
+        "reload_cost_modifier": 1.00,
+        "creation_cost_modifier": 1.00,
+        "unit_roll_modifier": "0",
+        "move_speed_modifier": 1.00,
+        "notes": "Baseline. No modifiers applied."
+      },
+      {
+        "range": "41-60",
+        "label": "STRAINED",
+        "move_cost_modifier": 1.20,
+        "attack_cost_modifier": 1.15,
+        "reload_cost_modifier": 1.25,
+        "creation_cost_modifier": 1.10,
+        "unit_roll_modifier": "-1",
+        "move_speed_modifier": 0.85,
+        "notes": "Supply lines under pressure. Movement slower and costlier. Ammunition resupply delayed. Units begin to feel the shortage."
+      },
+      {
+        "range": "21-40",
+        "label": "DEGRADED",
+        "move_cost_modifier": 1.50,
+        "attack_cost_modifier": 1.35,
+        "reload_cost_modifier": 1.60,
+        "creation_cost_modifier": 1.25,
+        "unit_roll_modifier": "-3",
+        "move_speed_modifier": 0.65,
+        "notes": "Serious logistics failure. Units consuming reserves. Movement severely hampered. Reload costs reflect black market and emergency procurement. Creating new units expensive and slow."
+      },
+      {
+        "range": "1-20",
+        "label": "CRITICAL",
+        "move_cost_modifier": 2.00,
+        "attack_cost_modifier": 1.75,
+        "reload_cost_modifier": 2.50,
+        "creation_cost_modifier": 1.75,
+        "unit_roll_modifier": "-5",
+        "move_speed_modifier": 0.40,
+        "notes": "Near-total logistics breakdown. Most units effectively immobile without exceptional cost. Magazine reloads nearly impossible without TRANSPORT assist. One successful enemy sabotage likely triggers Supply Chain Collapse."
+      },
+      {
+        "range": "0",
+        "label": "COLLAPSED",
+        "move_cost_modifier": null,
+        "attack_cost_modifier": null,
+        "reload_cost_modifier": null,
+        "creation_cost_modifier": null,
+        "unit_roll_modifier": null,
+        "move_speed_modifier": 0,
+        "notes": "LOSS CONDITION — Supply Chain Collapse triggered. All units frozen. Game ends."
+      }
+    ]
+  },
+
+  "intel_modifiers": {
+    "description": "Intel represents the percentage of enemy assets and positions currently known. Determines what actions are legally available to a player and provides roll bonuses for offensive operations. Low intel means blind attacks — high intel means precision.",
+    "brackets": [
+      {
+        "range": "0-19",
+        "label": "BLIND",
+        "actions_available": ["Move", "Defend", "Area Denial", "Stabilize", "Intel Operation"],
+        "actions_blocked": ["Attack", "Cyber Attack", "Recon targeted", "Special Action sabotage"],
+        "attack_roll_modifier": "-4",
+        "recon_roll_modifier": "-2",
+        "notes": "You know almost nothing. Targeted attacks impossible — you cannot hit what you cannot see. Area Attack available only at PRESENCE level which requires at least one prior Recon success."
+      },
+      {
+        "range": "20-39",
+        "label": "MINIMAL",
+        "actions_available": ["All — with restrictions"],
+        "attack_requires": "PRESENCE on target — Area Attack only, no Direct Attack",
+        "direct_attack_requires": "POSITION on specific target",
+        "attack_roll_modifier": "-2",
+        "recon_roll_modifier": "-1",
+        "notes": "Partial awareness. You know something is out there but not precisely what or where. Area Attack viable. Direct Attack requires prior Recon success on specific target."
+      },
+      {
+        "range": "40-59",
+        "label": "PARTIAL",
+        "actions_available": "All",
+        "attack_requires": "POSITION on target for Direct Attack",
+        "direct_attack_requires": "POSITION — standard",
+        "attack_roll_modifier": "0",
+        "recon_roll_modifier": "0",
+        "notes": "Baseline operational awareness. Standard thresholds apply. Most actions available without restriction."
+      },
+      {
+        "range": "60-79",
+        "label": "GOOD",
+        "actions_available": "All",
+        "attack_roll_modifier": "+2",
+        "recon_roll_modifier": "+2",
+        "special_action_roll_modifier": "+1",
+        "notes": "Strong situational awareness. Targeting solutions better. Recon more likely to reveal higher quality information. Special operations more likely to succeed."
+      },
+      {
+        "range": "80-100",
+        "label": "DOMINANT",
+        "actions_available": "All",
+        "attack_roll_modifier": "+4",
+        "recon_roll_modifier": "+3",
+        "special_action_roll_modifier": "+3",
+        "cyber_attack_roll_modifier": "+3",
+        "notes": "Near-complete enemy picture. Precision fires, cyber operations, and special actions all execute with high confidence. Dominant intel is difficult to achieve and expensive to maintain — enemy will attempt to degrade it."
+      }
+    ],
+    "reveal_quality_gate": {
+      "description": "Individual unit actions also require minimum reveal quality on specific targets regardless of global intel %.",
+      "PRESENCE": "Sufficient for Area Attack and Area Denial targeting",
+      "POSITION": "Required for Direct Attack on specific unit",
+      "IDENTITY": "Required for Cyber Attack and Special Action sabotage",
+      "FULL_PROFILE": "Required for targeted reload interdiction and Command Decapitation attempt"
+    }
+  },
+
+  "combined_modifier_note": {
+    "description": "When multiple modifiers apply they stack. Example: SC DEGRADED (-3 roll) + Stability STRAINED (-1 roll) + Intel MINIMAL (-2 roll) = -6 total on attack roll. A unit with readiness below 50 adds another -3. A D20 + (-6) against threshold 10 means you need to roll 16+ to succeed — hard but not impossible. This is intentional. Degraded players should feel the pressure compound.",
+    "designer_intent": "No single stat collapse is immediately fatal but compound degradation creates genuine crisis. Players who lose SC and Stability simultaneously face a cascade that is very hard to recover from without resource nodes."
+  }
+}

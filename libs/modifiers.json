@@ -1,0 +1,808 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "title": "Wargame Modifier Library — Doctrine-Grounded Environmental & Operational Friction",
+    "description": "Each modifier captures a distinct friction category drawn from three RAND sources: electronic warfare and AI vulnerability (RAND RR4229 — DoD AI Posture), sustainment and mission-readiness degradation (RAND RRA1198-1 — USAF Digital Talent Management), and political/civilian operational constraints in the Taiwan scenario (RAND RRA2930-1 — Harnessing Private Sector Innovation). Modifiers reference specific unit schema fields (cost, attack, detect, health, maneuver) to produce exact, engine-computable effects. Each entry has a unique id, category, source citation, trigger conditions, and a structured effects block.",
+    "categories": [
+      "EW_CYBER",
+      "LOGISTICS_SUSTAINMENT",
+      "POLITICAL_CIVILIAN",
+      "ENVIRONMENTAL_TERRAIN",
+      "AI_SYSTEM_INTEGRITY",
+      "INFORMATION_ENVIRONMENT"
+    ],
+    "schema_fields_affected": [
+      "attack.power",
+      "attack.range_km",
+      "attack.magazine_depth",
+      "attack.reload_turns",
+      "detect.sensor_range_km",
+      "detect.reveal_quality",
+      "detect.affected_by_EW",
+      "health.armor",
+      "health.regen_per_turn",
+      "maneuver.speed_per_turn_km",
+      "cost.upkeep_per_turn_millions",
+      "cost.reload_millions",
+      "cost.move_per_turn_millions"
+    ],
+    "effect_operator_key": {
+      "MULTIPLY": "Multiply the field value by the given factor (e.g. 0.5 = halved, 1.3 = +30%)",
+      "ADD": "Add a flat value to the field (positive or negative)",
+      "SET": "Override the field to an exact value regardless of base",
+      "LOCK": "Disable the action entirely for the modifier duration (boolean block)",
+      "DOWNGRADE": "Shift a categorical field one level toward the worst value (e.g. FULL_PROFILE → IDENTITY → POSITION → PRESENCE)"
+    },
+    "stacking_rule": "Multiplicative modifiers stack by sequential multiplication. Additive modifiers stack by summation. LOCK always overrides. DOWNGRADE stacks by successive category shift per applied instance. Consult engine adjudicator for interactions between three or more simultaneous modifiers on the same field.",
+    "primary_sources": {
+      "RR4229": "RAND RR4229 — The Department of Defense Posture for Artificial Intelligence (Tarraf et al., 2019). Used for: AI/ML operational fragility, EW-induced sensor degradation, adversarial data poisoning, GPS-denied accuracy loss, algorithm brittleness outside training distribution.",
+      "RRA1198-1": "RAND RRA1198-1 / RBA1198-1 — Implementing Technology-Enabled Human Resources Capabilities in the U.S. Air Force (Yeung et al., 2022). Used for: sustainment gap doctrine, mission readiness as a function of logistics system interoperability, digital transformation friction, upkeep cost escalation in contested supply environments.",
+      "RRA2930-1": "RAND RRA2930-1 — Harnessing the Power of Private Sector Innovation to Defeat a Chinese Invasion of Taiwan (Ryseff et al., 2024). Used for: collateral damage political thresholds, will-to-fight modifiers, Taiwan reserve force constraints, urban civilian sensitivity, information environment effects on cohesion, CCD (Camouflage, Concealment & Deception) doctrine."
+    }
+  },
+
+  "modifiers": [
+
+    {
+      "id": "MOD-EW-001",
+      "name": "GPS-Denied Environment",
+      "category": "EW_CYBER",
+      "source": "RR4229 — Chapter 3 (operational AI fragility in contested electromagnetic environments); RRA2930-1 — Core Technical Infrastructure section (PRC EW capability growth, jamming of ISR and fires networks)",
+      "description": "Active PRC electronic warfare suppresses GPS and satellite-aided navigation across the operational area. Affects all units flagged affected_by_EW:true. Precision-guided KINETIC munitions lose terminal accuracy. Sensor fusion systems degrade. Reflects RAND finding that PLA EW has grown significantly and would be employed to impair joint maneuver and fires networks from day one.",
+      "trigger": {
+        "condition": "An enemy EW unit (category or special_effect type EW) is active and within range, OR a scenario flag GPS_DENIED is set at map-level",
+        "affected_units": "All units where detect.affected_by_EW == true",
+        "does_not_affect": "Units where detect.affected_by_EW == false (e.g. IRR-001 Urban Resistance Cell, IRR-002 IED Network — human-cued systems)",
+        "minimum_trigger_duration_turns": 1
+      },
+      "effects": [
+        {
+          "field": "attack.power",
+          "operator": "MULTIPLY",
+          "value": 0.65,
+          "applies_to_damage_types": ["KINETIC"],
+          "condition": "Only when attack.area_effect == SINGLE_TARGET (precision guided). AREA munitions less affected because they do not rely on terminal GPS accuracy.",
+          "rationale": "RAND RR4229 documents AI/ML guidance algorithm brittleness outside training distribution; GPS jamming creates exactly that distribution shift for precision-guided systems."
+        },
+        {
+          "field": "detect.sensor_range_km",
+          "operator": "MULTIPLY",
+          "value": 0.5,
+          "rationale": "RAND RRA2930-1 Space/Ground Laser Communication section: PRC EW disrupts sensor data transmission paths, effectively halving the actionable sensor radius even if the sensor is physically operational."
+        },
+        {
+          "field": "detect.reveal_quality",
+          "operator": "DOWNGRADE",
+          "steps": 1,
+          "rationale": "Degraded sensor fusion reduces classification fidelity: a unit that would provide FULL_PROFILE now provides only IDENTITY; IDENTITY degrades to POSITION."
+        }
+      ],
+      "duration": "Persists as long as trigger condition holds. Lifted when EW unit is destroyed/suppressed or GPS_DENIED flag is cleared.",
+      "counter": "Deployment of space/ground laser comm assets (RRA2930-1 Core Infrastructure) or IWN (Integrated Warfighter Network) negates this modifier for BLUE units within comm-mesh range.",
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-EW-002",
+      "name": "Active Jamming Bubble",
+      "category": "EW_CYBER",
+      "source": "RRA2930-1 — Space/Ground Laser Communication operational challenge; RR4229 — Spectrum of DoD AI Applications (mission-support AI vulnerability)",
+      "description": "A dedicated enemy EW platform projects a localized jamming envelope (radius defined per scenario). Within the bubble, all datalinks are degraded and unit coordination is disrupted. Represents PLA EW employment doctrine to impair C3 during the critical invasion window.",
+      "trigger": {
+        "condition": "Enemy EW-capable unit is active within [scenario-defined radius, default 150 km]. Applies to all units inside bubble where affected_by_EW:true.",
+        "minimum_trigger_duration_turns": 1
+      },
+      "effects": [
+        {
+          "field": "cost.move_per_turn_millions",
+          "operator": "MULTIPLY",
+          "value": 1.25,
+          "rationale": "Without reliable comms, units must use slower, more resource-intensive means to coordinate movement (couriers, pre-planned routes). RRA2930-1 notes this was a persistent challenge for both US and Taiwan forces."
+        },
+        {
+          "field": "attack.reload_turns",
+          "operator": "ADD",
+          "value": 1,
+          "rationale": "Fires coordination requires datalinks for target handoff. Degraded comms add one extra turn to the reload/retasking cycle, consistent with the fires coordination problems identified in RRA2930-1 wargame."
+        },
+        {
+          "field": "detect.reveal_quality",
+          "operator": "DOWNGRADE",
+          "steps": 1,
+          "rationale": "Sensor data cannot be aggregated across platforms; each platform reverts to organic detection only."
+        }
+      ],
+      "duration": "Persists while EW unit is active. Stackable with MOD-EW-001 (GPS-Denied) — if both apply, DOWNGRADE stacks to 2 steps total on reveal_quality.",
+      "counter": "PLEO satellite mesh (RRA2930-1) within comm reach of affected unit negates reload_turns penalty only. Laser comms negate all effects.",
+      "severity": "MEDIUM"
+    },
+
+    {
+      "id": "MOD-EW-003",
+      "name": "Sensor Blind — CYBER Strike",
+      "category": "EW_CYBER",
+      "source": "RR4229 — Chapter 4 (DoD posture in AI: data and infrastructure vulnerabilities); unit schema cyber_effects field: SENSOR_BLIND",
+      "description": "A successful CYBER attack (damage_type:CYBER) against a sensor-enabled unit or node triggers a SENSOR_BLIND state. The target unit loses active sensor output for the modifier duration. Matches RAND RR4229 finding that DoD AI/sensor systems are fragile outside their operational envelope and have minimal adversarial hardening.",
+      "trigger": {
+        "condition": "Unit receives a CYBER damage action that succeeds. OR unit is at a node where a CYBER special_effect has applied SENSOR_BLIND.",
+        "affected_units": "Any unit with detect.sensor_range_km > 0"
+      },
+      "effects": [
+        {
+          "field": "detect.sensor_range_km",
+          "operator": "SET",
+          "value": 0,
+          "rationale": "Complete sensor blackout for duration. Unit can still fire on visually confirmed targets at range_km <= 1 using organic observation only."
+        },
+        {
+          "field": "detect.reveal_quality",
+          "operator": "SET",
+          "value": "PRESENCE",
+          "rationale": "Without sensor output, unit can only confirm that something is there — not what it is or where precisely."
+        }
+      ],
+      "duration": {
+        "default_turns": 2,
+        "extended_turns": 4,
+        "extended_condition": "If the attacking CYBER unit has magazine_depth remaining >= 3 at time of attack (sustained intrusion)"
+      },
+      "counter": "Edge computing asset (RRA2930-1 Edge Integration section) co-located at same node can reduce duration by 1 turn by providing local sensor redundancy.",
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-EW-004",
+      "name": "Drone Mimic Saturation",
+      "category": "EW_CYBER",
+      "source": "RRA2930-1 — Multidomain Drone Mimics (Unmanned Systems section); specifically: decoys confusing enemy ISR, phantom signatures absorbing air-to-air missiles",
+      "description": "BLUE deploys large numbers of multi-spectrum drone decoys (Multidomain Drone Mimics solution). Enemy sensor systems are saturated with false profiles. RED units targeting in affected airspace suffer accuracy and magazine penalties as missiles chase decoys. Reflects wargame finding that decoy solutions could reduce 5th-gen fighter losses by half.",
+      "trigger": {
+        "condition": "BLUE scenario flag DRONE_MIMIC_ACTIVE is set. Applies to all RED AIR category units attacking BLUE AIR units in the affected zone.",
+        "affected_units": "RED AIR units (affiliation RED_CN or RED_RU) conducting attacks against BLUE AIR targets"
+      },
+      "effects": [
+        {
+          "field": "attack.power",
+          "operator": "MULTIPLY",
+          "value": 0.70,
+          "rationale": "Missiles expended on decoys reduce effective damage output. RRA2930-1 analysis: decoy employment could reduce effective strike mass reaching real targets by approximately 30%."
+        },
+        {
+          "field": "attack.magazine_depth",
+          "operator": "ADD",
+          "value": -1,
+          "condition": "Applied at end of each attack action while flag is active — decoys consume magazine capacity",
+          "rationale": "Enemy AAMs are drawn to decoys, depleting payload faster. Consistent with RRA2930-1 finding that decoys 'absorb enemy anti-air missiles.'"
+        }
+      ],
+      "duration": "While BLUE DRONE_MIMIC_ACTIVE flag is set. Flag clears when BLUE's drone mimic unit is destroyed or out of magazine.",
+      "counter": "None specified (represents the core game-changing impact identified in RRA2930-1). RED may attempt to destroy drone launch platforms.",
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-LOG-001",
+      "name": "Sustainment Gap",
+      "category": "LOGISTICS_SUSTAINMENT",
+      "source": "RRA1198-1 — Mission Readiness section: 'USAF's ability to execute its global missions' dependent on digital logistics integration; RRA2930-1 — Survivable Logistics challenge; predictive logistics solution noting upkeep costs surge when supply nodes are contested",
+      "description": "A logistics node supplying the unit is contested or destroyed. The unit's supply chain is disrupted. Upkeep costs increase as units improvise resupply, and reload capability is degraded or disabled. Reflects RAND finding that DoD logistics systems are siloed, non-interoperable, and fragile under adversary pressure.",
+      "trigger": {
+        "condition": "The nearest friendly TRANSPORT, PORT, or logistics-tagged node supplying this unit is contested (enemy unit within 1 node) or destroyed",
+        "affected_units": "All units where transport_dependent:true, and all units with cost.upkeep_per_turn_millions > 0 that rely on a supply node"
+      },
+      "effects": [
+        {
+          "field": "cost.upkeep_per_turn_millions",
+          "operator": "MULTIPLY",
+          "value": 1.5,
+          "rationale": "Improvised resupply via alternate routes is costlier. RRA1198-1: failure to integrate logistics systems increases overhead significantly when primary pathways fail."
+        },
+        {
+          "field": "attack.reload_turns",
+          "operator": "ADD",
+          "value": 2,
+          "rationale": "Ammunition and fuel resupply delayed. RRA2930-1 wargame identified survivable logistics as a top-ten operational problem; disrupted resupply adds directly to fires cycle time."
+        },
+        {
+          "field": "health.regen_per_turn",
+          "operator": "MULTIPLY",
+          "value": 0.5,
+          "rationale": "Repair parts and medical support are also disrupted. Units recover health more slowly when supply is intermittent."
+        }
+      ],
+      "special_case": {
+        "condition": "If the supplying node is destroyed (not merely contested)",
+        "additional_effect": {
+          "field": "attack.magazine_depth",
+          "operator": "LOCK",
+          "lock_action": "RELOAD",
+          "duration_turns": 3,
+          "rationale": "No resupply means reload is impossible until a new supply line is established. Consistent with RRA2930-1 noting Taiwan forces would lose resupply capability after initial Chinese bombardment."
+        }
+      },
+      "duration": "Persists while supply node is contested/destroyed. Lifts when node is relieved or a new supply route is established.",
+      "counter": "Predictive/Prescriptive Logistics solution (RRA2930-1) active reduces upkeep multiplier to 1.25 instead of 1.5 and eliminates reload_turns penalty via pre-positioned stockpiles.",
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-LOG-002",
+      "name": "Fuel Reserve Depletion",
+      "category": "LOGISTICS_SUSTAINMENT",
+      "source": "RRA2930-1 — Survivable Logistics; medium-range ISR UAVs section noting 'these UAVs would still require functioning energy sources'; RRA1198-1 — mission readiness dependent on continuous resource flows",
+      "description": "Extended operations without resupply exhaust fuel reserves. Maneuver units lose mobility. Reflects doctrinal reality that high operational tempo without pre-positioned stockpiles rapidly consumes fuel, a core finding of both the Taiwan wargame and logistics readiness research.",
+      "trigger": {
+        "condition": "Unit has conducted move actions for 4+ consecutive turns without accessing a supply node, OR a scenario FUEL_SHORTAGE flag is active for this unit's affiliation",
+        "affected_units": "All LAND and AIR maneuver units"
+      },
+      "effects": [
+        {
+          "field": "maneuver.speed_per_turn_km",
+          "operator": "MULTIPLY",
+          "value": 0.5,
+          "rationale": "Low fuel forces fuel conservation protocols — slower speeds, fewer sorties, shorter move distances."
+        },
+        {
+          "field": "cost.move_per_turn_millions",
+          "operator": "MULTIPLY",
+          "value": 1.4,
+          "rationale": "Sourcing fuel through non-standard channels (black market, allied transfers, emergency air drops) costs significantly more per kilometer moved."
+        }
+      ],
+      "special_case": {
+        "condition": "AIR category units (category:AIR) under this modifier",
+        "additional_effect": {
+          "field": "maneuver.operational_radius_km",
+          "operator": "MULTIPLY",
+          "value": 0.6,
+          "rationale": "Aircraft must fly shorter, fuel-conserving profiles, directly reducing strike and patrol reach. Reflected in RRA2930-1 analysis of sortie generation under base-attack conditions."
+        }
+      },
+      "duration": "Persists until unit accesses a supply node or FUEL_SHORTAGE flag clears. If 3 additional turns pass without fuel access, unit becomes IMMOBILIZED (speed set to 0) until resupplied.",
+      "counter": "Predictive logistics push-model (RRA2930-1) pre-positions fuel at forward nodes, preventing trigger entirely if active before fuel shortage onset.",
+      "severity": "MEDIUM"
+    },
+
+    {
+      "id": "MOD-LOG-003",
+      "name": "Contested Node Overhead",
+      "category": "LOGISTICS_SUSTAINMENT",
+      "source": "RRA1198-1 — Digital transformation friction: 'bureaucratic friction, resistance, and entrenched culture that may slow or redirect change efforts'; IRR-001 Urban Resistance Cell special_effect description (enemy +25% upkeep); IRR-004 Guerrilla Sabotage Cell (+30% reload/move cost)",
+      "description": "When a logistics, transport, or airfield node is contested by irregular or guerrilla forces, all units using that node pay increased operational overhead. Mirrors the special_effect already built into IRR-001 and IRR-004 but operationalizes it as a formal map-level modifier for engine consistency.",
+      "trigger": {
+        "condition": "An IRR-category unit (or any unit with special_effect.type == COST_INCREASE) is occupying or contesting the same node as a logistics/transport hub being used by friendly forces",
+        "affected_units": "All units that used the contested node for reload, move, or resupply in the current or previous turn"
+      },
+      "effects": [
+        {
+          "field": "cost.upkeep_per_turn_millions",
+          "operator": "MULTIPLY",
+          "value": 1.25,
+          "rationale": "Directly reflects IRR-001 special_effect: 'Enemy units occupying same node pay +25% upkeep per turn.'"
+        },
+        {
+          "field": "cost.reload_millions",
+          "operator": "MULTIPLY",
+          "value": 1.30,
+          "condition": "Only applies if IRR-004 Guerrilla Sabotage Cell is the triggering unit",
+          "rationale": "Directly reflects IRR-004 special_effect: 'raises reload and move costs for all units using that node by +30%.'"
+        }
+      ],
+      "duration": "Persists while triggering irregular unit occupies/contests the node.",
+      "counter": "Clearing the node of irregular forces (destroying or displacing triggering unit) lifts modifier immediately.",
+      "severity": "LOW"
+    },
+
+    {
+      "id": "MOD-POL-001",
+      "name": "Collateral Damage Sensitivity",
+      "category": "POLITICAL_CIVILIAN",
+      "source": "RRA2930-1 — Political thresholds section; Optimize Decoy and Deception Employment (operational challenge: 'Restricting the use of these munitions only to geographic areas where civilians and non-combatants are unlikely to be present'); Short-range Strike UAVs (autonomy concerns in populated areas)",
+      "description": "Operations in densely populated urban terrain impose political and rules-of-engagement constraints on AREA-effect weapons. BLUE forces using AREA damage in URBAN_DENSE nodes suffer a political penalty and reduced effective power, reflecting the collateral damage calculus identified throughout the Taiwan wargame.",
+      "trigger": {
+        "condition": "A BLUE (or aligned) unit fires an attack where attack.area_effect == AREA and the target node is tagged URBAN_DENSE",
+        "affected_units": "Any BLUE-affiliated unit conducting AREA attacks in URBAN_DENSE terrain",
+        "does_not_affect": "SINGLE_TARGET attacks; attacks in non-urban terrain; RED/IRR units (no political constraint)"
+      },
+      "effects": [
+        {
+          "field": "attack.power",
+          "operator": "MULTIPLY",
+          "value": 0.60,
+          "rationale": "ROE restrictions force restricted fuzing, reduced yields, or weapon substitution — directly reducing effective lethality. RRA2930-1 explicitly flags 'willingness to allow autonomous systems to actively engage near populated areas' as a primary integration challenge."
+        },
+        {
+          "field": "cost.attack_millions",
+          "operator": "MULTIPLY",
+          "value": 1.50,
+          "rationale": "Precision-constrained employment requires more sorties, more targeting analysis, and more legal review, increasing per-attack cost."
+        }
+      ],
+      "political_penalty": {
+        "type": "WILL_TO_FIGHT_REDUCTION",
+        "applies_to": "Taiwan civilian population / allied coalition",
+        "magnitude": "MODERATE",
+        "description": "Each AREA attack in URBAN_DENSE triggers a -5 point deduction from a scenario-level Political Cohesion score (0–100). If score drops below 30, Taiwan reserve mobilization rate falls by 25% (RRA2930-1: Taiwan's will-to-fight is a critical variable; information operations and civilian casualties are the primary levers).",
+        "source_citation": "RRA2930-1: 'Taiwan's active-duty personnel constitute only about 10% of its total military personnel; consequently, anything that would lessen the willingness of its reservist component to fiercely resist the invasion could have a catastrophic impact.'"
+      },
+      "duration": "Instant (applied per qualifying attack action). Political penalty accumulates across the scenario.",
+      "counter": "Optimize Decoy and Deception Employment solution (RRA2930-1) active reduces power penalty to 0.80 instead of 0.60 by providing better target discrimination, partially preserving effectiveness while limiting collateral damage.",
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-POL-002",
+      "name": "Allied Basing Restriction",
+      "category": "POLITICAL_CIVILIAN",
+      "source": "RRA2930-1 — Analysis section: 'determining whether American aircraft can fly from friendly airbases or whether allied governments are willing to contribute their own forces'; Identifying AI-Generated Adversarial Disinformation (impact on what assistance allies are willing to provide)",
+      "description": "PRC information operations succeed in swaying a regional ally, restricting or revoking BLUE access to their airfields or ports. BLUE AIR and MARITIME units lose basing access at specified nodes. Reflects the wargame finding that the information environment directly determines allied participation.",
+      "trigger": {
+        "condition": "Scenario-level ALLY_BASING_RESTRICTED flag is set (triggered by PRC IO success — disinformation modifier MOD-INFO-001 or MOD-INFO-002 applying to a threshold ally)",
+        "affected_units": "All BLUE AIR and MARITIME_BATTLE units that list the restricted node as their active basing location"
+      },
+      "effects": [
+        {
+          "field": "maneuver.terrain_constraints",
+          "operator": "SET",
+          "value": "Restricted — cannot use [ALLY_NODE] as base. Must reroute to alternative AIRFIELD or CARRIER.",
+          "rationale": "Loss of forward basing forces rerouting to more distant bases, increasing transit times and reducing effective strike radius."
+        },
+        {
+          "field": "maneuver.operational_radius_km",
+          "operator": "MULTIPLY",
+          "value": 0.75,
+          "rationale": "Operating from more distant alternate bases reduces effective combat radius by approximately 25%, consistent with the operational geometry described in RRA2930-1 air combat modeling."
+        },
+        {
+          "field": "cost.move_per_turn_millions",
+          "operator": "MULTIPLY",
+          "value": 1.35,
+          "rationale": "Longer transit legs and reduced sortie efficiency increase per-turn movement costs."
+        }
+      ],
+      "duration": "Persists while ALLY_BASING_RESTRICTED flag is active. Flag can be cleared by a successful counter-IO action (see MOD-INFO-002 counter).",
+      "counter": "Identifying AI-Generated Adversarial Disinformation solution (RRA2930-1) active prevents this modifier from triggering by detecting and neutralizing PRC IO campaigns before they reach the ally threshold.",
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-POL-003",
+      "name": "Reserve Mobilization Failure",
+      "category": "POLITICAL_CIVILIAN",
+      "source": "RRA2930-1 — Commercial Combat Suite solution; will-to-fight analysis: 'anything that would lessen the willingness of its reservist component to fiercely resist the invasion'; RRA2930-1 wargame ground combat: brigade combat scores depend on reserve integration",
+      "description": "Taiwan reserve units fail to mobilize or arrive at reduced strength due to PRC information operations, civilian panic, or logistics failure. Affects IRREGULAR and LIGHT_INFANTRY units tagged as Taiwan Reserve. Reduces combat scores of affected ground units.",
+      "trigger": {
+        "condition": "Scenario Political Cohesion score falls below 50 (degraded by MOD-POL-001 political penalty accumulation or MOD-INFO-001 disinformation effects), OR scenario flag RESERVE_MOBILIZATION_DEGRADED is set",
+        "affected_units": "All BLUE LIGHT_INFANTRY and IRREGULAR units tagged affiliation:BLUE in scenario with role:TAIWAN_RESERVE"
+      },
+      "effects": [
+        {
+          "field": "attack.power",
+          "operator": "MULTIPLY",
+          "value": 0.75,
+          "rationale": "Undertrained, poorly equipped, or partially mobilized reserve units fight at reduced effectiveness. RRA2930-1 wargame: 'ground combat improvements arose from improved coordination and CCD measures for Taiwanese ground forces.'"
+        },
+        {
+          "field": "health.armor",
+          "operator": "MULTIPLY",
+          "value": 0.80,
+          "rationale": "Reserve units arriving without full equipment sets have reduced survivability."
+        },
+        {
+          "field": "maneuver.speed_per_turn_km",
+          "operator": "MULTIPLY",
+          "value": 0.85,
+          "rationale": "Disorganized mobilization slows unit movement to position."
+        }
+      ],
+      "duration": "Persists until Political Cohesion score recovers above 60, or Commercial Combat Suite modifier (MOD-POL-003-COUNTER) is active.",
+      "counter": {
+        "solution": "Commercial Combat Suite (RRA2930-1)",
+        "effect": "If active before conflict onset, negates this modifier entirely. If activated during conflict, reduces penalty to attack.power * 0.90 and restores armor and speed to baseline. Rationale: 'This solution would improve the effectiveness of Taiwan forces in three ways: reliable communications, ingrained essential behaviors, and improved unit cohesion.'"
+      },
+      "severity": "MEDIUM"
+    },
+
+    {
+      "id": "MOD-ENV-001",
+      "name": "Urban Density — Attacker Friction",
+      "category": "ENVIRONMENTAL_TERRAIN",
+      "source": "RRA2930-1 — Short-range Strike UAVs section (populated area constraints); Urban Resistance Cell unit schema (URBAN and CITY nodes only); IRR-001 terrain constraint: 'Cannot operate in open terrain — immediately detectable'",
+      "description": "Armored and mechanized forces operating in URBAN or CITY terrain suffer movement penalties and reduced armor effectiveness as buildings channelize movement and enable defenders. Mirrors doctrinal urban combat penalty codified in RAND wargame ground combat scoring.",
+      "trigger": {
+        "condition": "An ARMOR or ARTILLERY category unit occupies or moves through an URBAN or CITY node",
+        "affected_units": "ARMOR and ARTILLERY category units in urban terrain"
+      },
+      "effects": [
+        {
+          "field": "maneuver.speed_per_turn_km",
+          "operator": "MULTIPLY",
+          "value": 0.50,
+          "rationale": "Urban terrain halves effective maneuver speed for armored vehicles. Standard military urban combat doctrine."
+        },
+        {
+          "field": "health.armor",
+          "operator": "MULTIPLY",
+          "value": 0.70,
+          "rationale": "Vehicles are vulnerable to top-down and close-range attack in urban canyons; effective armor protection is reduced."
+        },
+        {
+          "field": "detect.sensor_range_km",
+          "operator": "MULTIPLY",
+          "value": 0.40,
+          "rationale": "Buildings drastically reduce sensor line-of-sight, reducing effective sensor range to approximately 40% of open-terrain value."
+        }
+      ],
+      "duration": "Active while unit remains in URBAN or CITY node. Lifts immediately upon exit.",
+      "counter": "IRR-001 Urban Resistance Cell co-located with BLUE ARMOR negates the sensor penalty by providing local guides and intelligence — representing the 'commercial combat suite' / local knowledge advantage.",
+      "severity": "MEDIUM"
+    },
+
+    {
+      "id": "MOD-ENV-002",
+      "name": "Taiwan Strait Maritime Hazard",
+      "category": "ENVIRONMENTAL_TERRAIN",
+      "source": "RRA2930-1 — Advanced Mines solution; maritime combat modeling section: 'Mine warfare is included in this model'; surface warfare model: 'engagements follow strict engagement sequences'",
+      "description": "The Taiwan Strait operational zone is seeded with advanced smart mines (AI/ML enabled, repositionable). RED amphibious and surface units transiting the Strait face attrition risk each turn. Reflects wargame finding that improved mines could reduce PLA amphibious battalions landing by approximately one-third.",
+      "trigger": {
+        "condition": "Scenario flag STRAIT_MINED is active (set when BLUE advanced mines solution is deployed). Applies to all RED MARITIME units transiting a STRAIT node.",
+        "affected_units": "RED MARITIME_CARGO and MARITIME_BATTLE units (AMPHIBIOUS maneuver type units most severely)"
+      },
+      "effects": [
+        {
+          "field": "health.armor",
+          "operator": "MULTIPLY",
+          "value": 0.80,
+          "condition": "Applied once per transit of a STRAIT node",
+          "rationale": "Each Strait crossing exposes vessels to mine threat. 20% armor degradation per crossing represents cumulative attrition risk. Based on RRA2930-1 analysis: 'smart mines could position themselves to disrupt the PLA invasion force just prior to its assault on the beachhead.'"
+        },
+        {
+          "field": "maneuver.speed_per_turn_km",
+          "operator": "MULTIPLY",
+          "value": 0.70,
+          "rationale": "Minesweeping protocols require reduced speed and altered formation — reflecting RRA2930-1 finding that smart mines 'could force the diversion of Chinese minesweeping assets to protect the invasion force.'"
+        }
+      ],
+      "psychological_effect": {
+        "type": "COHESION_PENALTY",
+        "applies_to": "RED amphibious battalion units",
+        "magnitude": "-10 to RED Combat Cohesion score per transit",
+        "rationale": "RRA2930-1: 'physical losses incurred by the invasion fleet would be magnified by the psychological impact of the attack on inexperienced vessel crews and by the limited ability of the Chinese military to improvise.'"
+      },
+      "duration": "Active while STRAIT_MINED flag is set. Applies once per STRAIT node transit.",
+      "counter": "RED can attempt to clear mines with a dedicated minesweeping action (costs 2 turns and removes STRAIT_MINED flag for 1 node only). Or RED can accept attrition and push through.",
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-ENV-003",
+      "name": "Airbase Under Bombardment",
+      "category": "ENVIRONMENTAL_TERRAIN",
+      "source": "RRA2930-1 — wargame analysis: 'most losses of American fighter aircraft occurred on the ground from attacks by Chinese ballistic missiles'; air combat model: 'accounts for the rate and ability of aircraft to launch sorties from bases under attack'; CODE suite of models for sortie generation in contested environments",
+      "description": "An AIRFIELD node is under active missile or drone bombardment. AIR units based there suffer sortie generation penalties and ground attrition. Reflects the single most damaging RED action in the RRA2930-1 baseline wargame — over 100 US 5th-gen fighters were destroyed on the ground.",
+      "trigger": {
+        "condition": "The AIRFIELD node where an AIR unit is based is targeted by a RED attack (any damage type). Persists for the attack turn and the following turn.",
+        "affected_units": "All AIR category units currently based at the targeted AIRFIELD node"
+      },
+      "effects": [
+        {
+          "field": "attack.magazine_depth",
+          "operator": "ADD",
+          "value": -1,
+          "condition": "Applied each turn the airfield is under bombardment — represents aircraft destroyed on ground before they can sortie",
+          "rationale": "RRA2930-1 baseline wargame: ground attrition from ballistic missile strikes was the primary source of US fighter losses. Magazine depth reduction represents squadrons unable to sortie."
+        },
+        {
+          "field": "cost.activation_millions",
+          "operator": "MULTIPLY",
+          "value": 2.0,
+          "rationale": "Emergency sortie generation under attack is twice as costly in fuel, crew risk, and maintenance."
+        },
+        {
+          "field": "health.regen_per_turn",
+          "operator": "MULTIPLY",
+          "value": 0,
+          "rationale": "Aircraft cannot be repaired while the airfield is under active attack."
+        }
+      ],
+      "duration": "Active turn of bombardment + 1 subsequent turn (runway repair/safety clearance time).",
+      "counter": {
+        "solution": "Optimize Decoy and Deception Employment (RRA2930-1)",
+        "effect": "If active, reduces magazine_depth penalty to 0 (decoys protect real aircraft from targeting) and activation cost multiplier to 1.25. This directly represents the wargame finding that decoy/CCD solutions reduced 5th-gen fighter losses by half.",
+        "citation": "RRA2930-1: 'the synergistic employment of Multi-Domain Drone Mimics and Optimized Decoy and Deception Employment has the potential to substantially reduce the losses of American fighter aircraft especially at airfields.'"
+      },
+      "severity": "CRITICAL"
+    },
+
+    {
+      "id": "MOD-AI-001",
+      "name": "Adversarial Data Poisoning",
+      "category": "AI_SYSTEM_INTEGRITY",
+      "source": "RR4229 — Chapter 3: 'fragility and lack of robustness of these algorithms'; Chapter 4: data governance vulnerabilities; RRA2930-1 — Identifying AI-Generated Adversarial Disinformation: 'the team will need to ensure the PRC cannot manipulate this capability with data poisoning attacks'",
+      "description": "An enemy CYBER or IO operation successfully poisons the training data or live data feed of a unit relying on an AI/ML system (sensor fusion, targeting algorithm, logistics prediction). The AI system begins producing systematically incorrect outputs — not random errors but adversarially directed misclassification. Reflects RAND RR4229 finding that current ML models cannot predict behavior they have not seen, and that adversarial manipulation is a specific, under-addressed vulnerability.",
+      "trigger": {
+        "condition": "A RED CYBER unit (damage_type:CYBER) successfully attacks a BLUE unit with detect.reveal_quality of FULL_PROFILE or IDENTITY (units relying on AI-driven sensor fusion), OR scenario flag DATA_POISONING_ACTIVE is set",
+        "affected_units": "BLUE units with detect.reveal_quality == FULL_PROFILE or IDENTITY where affected_by_EW:true"
+      },
+      "effects": [
+        {
+          "field": "detect.reveal_quality",
+          "operator": "SET",
+          "value": "POSITION",
+          "rationale": "Poisoned classification system cannot reliably identify targets — degrades to position-only output. RR4229: 'algorithms optimized for commercial rather than DoD uses' are especially brittle when adversarially manipulated."
+        },
+        {
+          "field": "attack.power",
+          "operator": "MULTIPLY",
+          "value": 0.75,
+          "condition": "Applies when attack is AI-guided (any SINGLE_TARGET attack from a unit with detect.reveal_quality originally FULL_PROFILE)",
+          "rationale": "Targeting solutions based on poisoned sensor data will misidentify, mis-aim, or fail to engage correctly. 25% power reduction represents targeting errors."
+        },
+        {
+          "field": "cost.recon_millions",
+          "operator": "MULTIPLY",
+          "value": 2.0,
+          "rationale": "Recon actions must now be manually verified rather than AI-assisted, doubling analyst burden and cost. Consistent with RR4229 recommendation that human-machine teaming with oversight is essential for operational AI."
+        }
+      ],
+      "hidden_effect": {
+        "description": "The affected unit does NOT receive notification that it has been poisoned. Its outputs appear normal to the operator but are systematically skewed. The engine tracks this internally. The human player controlling the unit must independently detect the anomaly (e.g., by comparing sensor reports against allied reports) to trigger counter.",
+        "rationale": "RRA2930-1 Situational Awareness Model: 'invalid results could potentially set off false alarms or lead to bad decisions.' The insidious nature of data poisoning is that it is not immediately obvious."
+      },
+      "duration": {
+        "default_turns": 3,
+        "detection_check": "Once per turn, affected player may spend 1 additional recon action to attempt detection. Success clears the modifier."
+      },
+      "counter": "Edge computing node (RRA2930-1) with local model validation can detect poisoning in 1 turn and reduce duration to 1 turn.",
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-AI-002",
+      "name": "Algorithm Distribution Shift",
+      "category": "AI_SYSTEM_INTEGRITY",
+      "source": "RR4229 — 'Existing ML models may not be able to predict behavior they have not seen. Adapting to and understanding novel behaviors from the adversary will be challenging.' (Chapter 3 / Situational Awareness Model section); RAND finding on operational AI being 'long term' due to fragility",
+      "description": "The adversary employs a novel tactic, formation, or equipment configuration that falls outside the training distribution of BLUE's AI-driven targeting or prediction systems. The AI system's confidence collapses and outputs degrade. Reflects the core RAND RR4229 finding that current DoD AI is brittle when encountering out-of-distribution inputs.",
+      "trigger": {
+        "condition": "RED player declares and executes a NOVEL_TACTIC action (declared once per scenario, representing a deliberate doctrinal surprise). Applies to all BLUE units with AI-assisted detection.",
+        "affected_units": "BLUE units with detect.reveal_quality FULL_PROFILE or IDENTITY"
+      },
+      "effects": [
+        {
+          "field": "detect.reveal_quality",
+          "operator": "DOWNGRADE",
+          "steps": 2,
+          "rationale": "Algorithm encounters formation or signature it has not been trained on; classification collapses two full levels (FULL_PROFILE → POSITION, IDENTITY → PRESENCE)."
+        },
+        {
+          "field": "detect.sensor_range_km",
+          "operator": "MULTIPLY",
+          "value": 0.70,
+          "rationale": "Uncertainty causes the system to flag more false positives, effectively reducing the actionable range at which the system produces confident outputs."
+        }
+      ],
+      "duration": {
+        "turns": 2,
+        "recovery_note": "After 2 turns, the system partially adapts (represents human analysts updating the model with new data). Reveal quality recovers 1 step; sensor range returns to baseline."
+      },
+      "counter": "Situational Awareness Model solution (RRA2930-1) active reduces duration to 1 turn by providing human analyst oversight that detects the distribution shift and overrides faulty AI outputs.",
+      "severity": "MEDIUM"
+    },
+
+    {
+      "id": "MOD-INFO-001",
+      "name": "PRC Disinformation Campaign — Active",
+      "category": "INFORMATION_ENVIRONMENT",
+      "source": "RRA2930-1 — Identifying AI-Generated Adversarial Disinformation: 'Synthetic text and multimedia employed in adversary information operations during a PRC-Taiwan conflict'; 'Taiwan's mobilization of reserves is a critical part of their defense and may be vulnerable to PRC information operations'",
+      "description": "The PRC launches a coordinated AI-generated disinformation campaign targeting Taiwan's civilian population and reserve forces. False narratives degrade will-to-fight and interfere with allied coordination. This modifier operates on the scenario-level Political Cohesion score and reserve mobilization, not on individual unit combat statistics.",
+      "trigger": {
+        "condition": "RED IO action is declared and no BLUE counter-IO solution is active. OR scenario flag PRC_IO_CAMPAIGN is set.",
+        "affected_units": "Scenario-level Political Cohesion score; all Taiwan RESERVE-tagged BLUE units"
+      },
+      "effects": [
+        {
+          "field": "SCENARIO.political_cohesion_score",
+          "operator": "ADD",
+          "value": -15,
+          "per_turn": false,
+          "rationale": "Single IO campaign launch degrades cohesion by 15 points. Persistent campaigns (3+ turns) stack this effect, potentially triggering MOD-POL-003 Reserve Mobilization Failure."
+        },
+        {
+          "field": "SCENARIO.allied_contribution_threshold",
+          "operator": "ADD",
+          "value": -10,
+          "rationale": "RRA2930-1: IO success 'could significantly alter what kinds of assistance allies throughout the region are willing to provide American forces.' Reduces the score at which allies contribute forces."
+        }
+      ],
+      "duration": {
+        "turns": "Persistent while PRC_IO_CAMPAIGN flag is active",
+        "cumulative_cap": "Political Cohesion score floor is 10 — cannot be driven below minimum baseline representing core resistance"
+      },
+      "counter": {
+        "solution": "Identifying AI-Generated Adversarial Disinformation (RRA2930-1)",
+        "activation_cost_millions": 20,
+        "effect": "If active, nullifies this modifier entirely — Political Cohesion score is not reduced and PRC_IO_CAMPAIGN flag cannot trigger MOD-POL-002 or MOD-POL-003.",
+        "citation": "RRA2930-1: 'Success in the information environment could be critical to the defense of Taiwan in several ways. First, success in this domain could have a meaningful impact on the will-to-fight of Taiwan's reservist contingent.'"
+      },
+      "severity": "HIGH"
+    },
+
+    {
+      "id": "MOD-INFO-002",
+      "name": "BLUE Counter-IO Active",
+      "category": "INFORMATION_ENVIRONMENT",
+      "source": "RRA2930-1 — Identifying AI-Generated Adversarial Disinformation; Document/Voice Translation solution (enabling allied coordination); Situational Awareness Model (early warning intelligence advantage)",
+      "description": "BLUE has successfully deployed AI-driven counter-disinformation tools. PRC IO campaigns are detected and neutralized before they achieve threshold effects. This is a positive modifier — a buff — representing the information advantage RAND identifies as potentially decisive in the Taiwan scenario.",
+      "trigger": {
+        "condition": "BLUE has spent activation cost for the Counter-IO solution AND the solution has been active for at least 1 turn",
+        "affected_units": "Scenario-level cohesion score; all BLUE AIR and MARITIME units (allied basing benefits)"
+      },
+      "effects": [
+        {
+          "field": "SCENARIO.political_cohesion_score",
+          "operator": "ADD",
+          "value": 10,
+          "per_turn": false,
+          "note": "One-time boost upon activation representing restoration of public confidence",
+          "rationale": "RRA2930-1: accurate counter-narrative reestablishes public trust and neutralizes the PRC narrative before it spreads."
+        },
+        {
+          "field": "SCENARIO.allied_contribution_threshold",
+          "operator": "ADD",
+          "value": 5,
+          "rationale": "Allied governments more willing to contribute when they see effective information management from BLUE."
+        },
+        {
+          "field": "MOD-INFO-001",
+          "operator": "LOCK",
+          "lock_action": "PREVENT_TRIGGER",
+          "rationale": "Active counter-IO prevents PRC disinformation campaigns from triggering while solution remains active."
+        }
+      ],
+      "duration": "Active as long as BLUE Counter-IO unit/solution is funded and operational. Turns off if the supporting unit is destroyed.",
+      "severity": "POSITIVE_BUFF"
+    },
+
+    {
+      "id": "MOD-INFO-003",
+      "name": "Sensor Fusion Advantage — IWN Active",
+      "category": "INFORMATION_ENVIRONMENT",
+      "source": "RRA2930-1 — Integrated Warfighter Network; Edge Integration/Computing; Joint Cross-domain COP. Combined effect of core technical infrastructure solutions improving sensor-to-shooter timelines.",
+      "description": "BLUE has deployed the Integrated Warfighter Network and Edge Computing solutions, providing a resilient, multi-path communications architecture. All BLUE units benefit from improved sensor fusion and faster fires coordination. This positive modifier represents the information advantage RAND identifies as potentially more impactful than individual weapons improvements.",
+      "trigger": {
+        "condition": "BLUE scenario flag IWN_ACTIVE is set (requires activation of IWN + Edge Computing solutions, total cost approximately 40M per scenario setup)",
+        "affected_units": "All BLUE units with detect.affected_by_EW:true (these are the units plugged into the network)"
+      },
+      "effects": [
+        {
+          "field": "detect.sensor_range_km",
+          "operator": "MULTIPLY",
+          "value": 1.25,
+          "rationale": "IWN aggregates sensor feeds across platforms, extending effective sensor reach by 25%. RRA2930-1 IWN section: 'increases both the likelihood that units have reliable communications and the amount of network bandwidth available.'"
+        },
+        {
+          "field": "attack.reload_turns",
+          "operator": "ADD",
+          "value": -1,
+          "minimum": 1,
+          "rationale": "Faster sensor-to-shooter data transfer reduces targeting cycle time by one turn minimum. RRA2930-1: 'improved coordination for better timeliness of fires and targeting ashore' was identified as a key ground combat improvement."
+        },
+        {
+          "field": "detect.reveal_quality",
+          "operator": "UPGRADE",
+          "steps": 1,
+          "condition": "Only upgrades units currently at POSITION or IDENTITY — cannot exceed FULL_PROFILE",
+          "rationale": "Cross-cueing between platforms elevates classification quality."
+        }
+      ],
+      "resilience_to_EW": {
+        "description": "If MOD-EW-001 (GPS-Denied) or MOD-EW-002 (Active Jamming) is simultaneously active, IWN_ACTIVE reduces the sensor_range_km penalty from 0.5 to 0.75 (partial mitigation via mesh routing).",
+        "rationale": "RRA2930-1: 'Mesh networks would also improve the reliability and availability of communications' — the multi-path architecture is specifically designed to resist jamming."
+      },
+      "duration": "Active while IWN_ACTIVE flag is set. Flag cleared only if the IWN infrastructure node is destroyed.",
+      "severity": "POSITIVE_BUFF"
+    },
+
+    {
+      "id": "MOD-INFO-004",
+      "name": "Translation Friction — No CUI",
+      "category": "INFORMATION_ENVIRONMENT",
+      "source": "RRA2930-1 — Document/Voice Translation solution: 'language barriers inhibit US and Taiwan personnel from studying each other's doctrine and coordinating efforts'; 'language barriers could prevent effective real-time communication at the tactical level'",
+      "description": "No real-time translation capability has been deployed. US and Taiwan forces cannot communicate effectively at the tactical level. Joint fires coordination is delayed. Reflects a concrete operational friction identified in the RRA2930-1 wargame as a top-ten problem.",
+      "trigger": {
+        "condition": "Scenario flag TRANSLATION_CAPABLE is NOT set AND a BLUE unit and a BLUE Taiwan-tagged unit are co-located or attempting a combined fires action",
+        "affected_units": "BLUE units conducting combined operations with Taiwan-tagged BLUE units"
+      },
+      "effects": [
+        {
+          "field": "attack.reload_turns",
+          "operator": "ADD",
+          "value": 1,
+          "rationale": "Fires coordination across a language barrier adds one additional turn to the targeting cycle. RRA2930-1: 'language barriers could also prevent effective real-time communication between US and Taiwan personnel at the tactical level during the conflict.'"
+        },
+        {
+          "field": "cost.attack_millions",
+          "operator": "MULTIPLY",
+          "value": 1.20,
+          "rationale": "Additional liaison and verification steps required when communicating through imperfect translation increase per-attack cost."
+        }
+      ],
+      "duration": "Active until TRANSLATION_CAPABLE flag is set (Document/Voice Translation solution deployed).",
+      "counter": {
+        "solution": "Document/Voice Translation (RRA2930-1)",
+        "activation_cost_millions": 5,
+        "effect": "Sets TRANSLATION_CAPABLE flag, immediately lifting this modifier. Also provides +5% attack.power bonus for combined US-Taiwan fires actions (mutual doctrine understanding).",
+        "citation": "RRA2930-1: 'real-time voice translation would simplify communication between controllers on the ground and allied pilots, sailors, or artillery personnel supporting with various types of fires.'"
+      },
+      "severity": "LOW"
+    }
+
+  ],
+
+  "modifier_interaction_matrix": {
+    "description": "Defines known interactions between modifiers when two or more apply simultaneously to the same unit. Engine should check this table before resolving stacked effects.",
+    "interactions": [
+      {
+        "modifier_ids": ["MOD-EW-001", "MOD-EW-002"],
+        "interaction_type": "STACK_ADDITIVE_THEN_CAP",
+        "resolution": "detect.reveal_quality DOWNGRADE stacks to maximum 3 steps total (floor: PRESENCE). sensor_range_km multipliers multiply sequentially: 0.5 * [MOD-EW-002 does not add a second sensor penalty — only reveal_quality stacks]. Document the net effect clearly in the UI.",
+        "source_note": "RRA2930-1 Space/Ground Laser Comm section notes both jamming and EW operate simultaneously in a PRC invasion — compounding is realistic."
+      },
+      {
+        "modifier_ids": ["MOD-EW-003", "MOD-AI-001"],
+        "interaction_type": "OVERRIDE",
+        "resolution": "MOD-EW-003 (SENSOR_BLIND, sets sensor_range_km to 0) overrides MOD-AI-001 reveal_quality downgrade — there is nothing to downgrade if the sensor is fully blind. Both cost effects apply independently.",
+        "source_note": "LOCK effects always dominate DOWNGRADE effects per schema stacking rules."
+      },
+      {
+        "modifier_ids": ["MOD-LOG-001", "MOD-ENV-003"],
+        "interaction_type": "COMPOUND_SEVERITY",
+        "resolution": "Sustainment Gap (MOD-LOG-001) reload_turns ADD and Airbase Under Bombardment (MOD-ENV-003) magazine_depth ADD both apply. Combined effect: a unit under both has reload+2 turns AND loses 1 magazine charge per bombardment turn — representing a unit that is both running out of ammunition and unable to resupply. This is historically the most dangerous logistics state.",
+        "source_note": "RRA2930-1 wargame found that fires effectiveness collapsed rapidly when both supply disruption and base attrition applied simultaneously."
+      },
+      {
+        "modifier_ids": ["MOD-INFO-003", "MOD-EW-001"],
+        "interaction_type": "PARTIAL_MITIGATION",
+        "resolution": "IWN_ACTIVE (MOD-INFO-003) partially negates GPS-Denied (MOD-EW-001). Net sensor_range_km multiplier becomes 0.75 instead of 0.5. reveal_quality DOWNGRADE from MOD-EW-001 is reduced to 0 steps (IWN provides cross-cued sensor data that partially compensates for GPS loss).",
+        "source_note": "RRA2930-1: 'Mesh networks would also improve the reliability and availability of communications' — explicitly designed as a counter to PLA EW."
+      },
+      {
+        "modifier_ids": ["MOD-POL-001", "MOD-INFO-001"],
+        "interaction_type": "ACCELERATED_THRESHOLD",
+        "resolution": "If both are active simultaneously, Political Cohesion score drops faster. Each AREA attack in URBAN_DENSE (MOD-POL-001 political_penalty) inflicts -8 points instead of -5 when MOD-INFO-001 is also active (PRC disinformation amplifies perception of civilian harm). Reserve Mobilization Failure threshold rises from 50 to 60.",
+        "source_note": "RRA2930-1: information operations and collateral damage are mutually amplifying — PRC would use any civilian casualties as IO fodder."
+      }
+    ]
+  },
+
+  "modifier_quick_reference": {
+    "description": "Sorted by severity for rapid scenario planning",
+    "CRITICAL": ["MOD-ENV-003"],
+    "HIGH": [
+      "MOD-EW-001",
+      "MOD-EW-003",
+      "MOD-EW-004",
+      "MOD-LOG-001",
+      "MOD-POL-001",
+      "MOD-POL-002",
+      "MOD-ENV-002",
+      "MOD-AI-001",
+      "MOD-INFO-001"
+    ],
+    "MEDIUM": [
+      "MOD-EW-002",
+      "MOD-LOG-002",
+      "MOD-POL-003",
+      "MOD-ENV-001",
+      "MOD-AI-002"
+    ],
+    "LOW": [
+      "MOD-LOG-003",
+      "MOD-INFO-004"
+    ],
+    "POSITIVE_BUFF": [
+      "MOD-INFO-002",
+      "MOD-INFO-003"
+    ]
+  }
+}

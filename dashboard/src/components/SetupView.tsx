@@ -6,6 +6,7 @@ import { ALL_SCENARIOS } from '@/lib/mock-data'
 
 interface Props {
   onLaunch: (config: ScenarioConfig) => void
+  disabled?: boolean
 }
 
 const TYPE_COLOR: Record<string, string> = {
@@ -101,17 +102,27 @@ function ForcePanel({ force, color }: { force: Force; color: string }) {
   )
 }
 
-export default function SetupView({ onLaunch }: Props) {
+export default function SetupView({ onLaunch, disabled = false }: Props) {
   const [selectedId, setSelectedId] = useState<string>(ALL_SCENARIOS[0].id)
   const [label, setLabel]           = useState('')
+  const [mode, setMode]             = useState<'manual' | 'auto'>('manual')
+  const [autoTurns, setAutoTurns]   = useState(ALL_SCENARIOS[0].turns_total)
 
   const scenario  = ALL_SCENARIOS.find((s) => s.id === selectedId)!
   const typeColor = TYPE_COLOR[scenario.scenario_type] ?? 'var(--accent)'
+
+  function handleSelectScenario(id: string) {
+    setSelectedId(id)
+    setLabel('')
+    setAutoTurns(ALL_SCENARIOS.find((s) => s.id === id)!.turns_total)
+  }
 
   function handleLaunch() {
     onLaunch({
       base_scenario_id: selectedId,
       label_override:   label.trim() || scenario.name,
+      mode,
+      auto_turns:       autoTurns,
     })
   }
 
@@ -129,7 +140,7 @@ export default function SetupView({ onLaunch }: Props) {
             <div
               key={s.id}
               className={`scenario-card${selected ? ' selected' : ''}`}
-              onClick={() => { setSelectedId(s.id); setLabel('') }}
+              onClick={() => handleSelectScenario(s.id)}
             >
               {selected && <div className="selected-badge">SELECTED</div>}
 
@@ -276,7 +287,7 @@ export default function SetupView({ onLaunch }: Props) {
           </div>
         )}
 
-        {/* Run label + launch */}
+        {/* Run label + mode + launch */}
         <div className="panel" style={{ marginBottom: 14 }}>
           <div className="panel-title">Run Label <span className="dim" style={{ fontWeight: 400 }}>(optional)</span></div>
           <input
@@ -284,18 +295,83 @@ export default function SetupView({ onLaunch }: Props) {
             placeholder={scenario.name}
             value={label}
             onChange={(e) => setLabel(e.target.value)}
+            style={{ marginBottom: 16 }}
           />
+
+          <div className="panel-title" style={{ marginBottom: 8 }}>Execution Mode</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: mode === 'auto' ? 12 : 0 }}>
+            {(['manual', 'auto'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                style={{
+                  flex: 1,
+                  padding: '8px 0',
+                  fontSize: 11,
+                  letterSpacing: '0.1em',
+                  background: mode === m ? (m === 'auto' ? 'rgba(255,210,74,0.12)' : 'rgba(74,158,255,0.12)') : 'var(--surface-2)',
+                  border: `1px solid ${mode === m ? (m === 'auto' ? 'var(--amber)' : 'var(--blue)') : 'var(--border)'}`,
+                  color: mode === m ? (m === 'auto' ? 'var(--amber)' : 'var(--blue)') : 'var(--dim)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                }}
+              >
+                {m === 'manual' ? 'MANUAL' : 'AUTO-SIM'}
+              </button>
+            ))}
+          </div>
+
+          {mode === 'auto' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 4 }}>
+              <span style={{ fontSize: 11, color: 'var(--dim)', letterSpacing: '0.08em', flex: 1 }}>
+                Turns to simulate
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={() => setAutoTurns((n) => Math.max(1, n - 1))}
+                  style={{
+                    width: 26, height: 26, fontSize: 14, lineHeight: 1,
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    color: 'var(--text)', borderRadius: 3, cursor: 'pointer', fontFamily: 'var(--font)',
+                  }}
+                >−</button>
+                <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--amber)', minWidth: 28, textAlign: 'center' }}>
+                  {autoTurns}
+                </span>
+                <button
+                  onClick={() => setAutoTurns((n) => Math.min(scenario.turns_total, n + 1))}
+                  style={{
+                    width: 26, height: 26, fontSize: 14, lineHeight: 1,
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    color: 'var(--text)', borderRadius: 3, cursor: 'pointer', fontFamily: 'var(--font)',
+                  }}
+                >+</button>
+              </div>
+              <span style={{ fontSize: 10, color: 'var(--dimmer)' }}>/ {scenario.turns_total}</span>
+            </div>
+          )}
         </div>
 
         <button
           className="btn-primary"
-          style={{ width: '100%', fontSize: 14, padding: '12px 0' }}
+          style={{
+            width: '100%', fontSize: 14, padding: '12px 0',
+            ...(mode === 'auto' ? { borderColor: 'var(--amber)', color: 'var(--amber)' } : {}),
+          }}
           onClick={handleLaunch}
+          disabled={disabled}
         >
-          GENERATE &amp; LAUNCH  ▸▸
+          {disabled
+            ? 'LAUNCHING…'
+            : mode === 'auto'
+              ? `LAUNCH AUTO-SIM  (${autoTurns} turns)  ▸▸`
+              : 'GENERATE & LAUNCH  ▸▸'
+          }
         </button>
         <div className="small-meta" style={{ marginTop: 10, textAlign: 'center' }}>
-          {scenario.turns_total}-turn run · 6h check-in cadence · claude-opus-4-7
+          {scenario.turns_total}-turn run · 6h check-in cadence
+          {mode === 'auto' ? ' · auto-sim on HOLD strategy' : ' · claude-opus-4-7'}
         </div>
       </div>
 

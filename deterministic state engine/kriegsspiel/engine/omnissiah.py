@@ -357,6 +357,32 @@ def _movement_phase(
                 dest_idx -= 1
                 dest = path[dest_idx]
 
+            # ZOC / contact rule:
+            #   ADVANCE  → halt the step *before* entering an enemy's ZOC (Chebyshev ≤ 1)
+            #   ASSAULT  → advance *to* the first enemy cell encountered (Chebyshev = 0),
+            #              so close combat resolves at distance 0 without overshooting.
+            is_assault = order.mission is MissionType.ASSAULT
+            stop_dist  = 0 if is_assault else 1
+            enemy_posns = frozenset(
+                eu.position for eu in units.values()
+                if eu.is_alive and eu.side != u.side
+            )
+            if enemy_posns:
+                for zoc_idx in range(1, dest_idx + 1):
+                    if any(chebyshev_distance(path[zoc_idx], ep) <= stop_dist for ep in enemy_posns):
+                        dest_idx = zoc_idx if is_assault else max(0, zoc_idx - 1)
+                        break
+                dest = path[dest_idx]
+                # Fallback cell may coincide with a friendly — re-check stacking
+                while dest != u.position and dest in claimed[u.side]:
+                    dest_idx -= 1
+                    dest = path[dest_idx]
+
+            # Final stacking guard — belt-and-suspenders before committing the move
+            while dest != u.position and dest in claimed[u.side]:
+                dest_idx -= 1
+                dest = path[dest_idx]
+
             old_pos = u.position
             u.position = dest
             u.dug_in = False
@@ -368,6 +394,8 @@ def _movement_phase(
             elif order.mission == MissionType.RECON:
                 u.posture = Posture.MOVING
 
+            if dest != old_pos:
+                claimed[u.side].discard(old_pos)  # vacated
             claimed[u.side].add(dest)
 
             if dest != old_pos:
@@ -604,7 +632,10 @@ def _control_update(
                 ctl = control.get(cell_key)
                 if ctl is not None:
                     ctl.persistence_turns = 0
-                    ctl.contender = world.opposing_side(ctl.controlled_by)
+                    # opposing_side(NEUTRAL) returns NEUTRAL, which would equal
+                    # controlled_by and fail the ControlState invariant.
+                    opposing = world.opposing_side(ctl.controlled_by)
+                    ctl.contender = opposing if opposing != ctl.controlled_by else None
                 events.append(EngineEvent(
                     event_type=EventType.CONTROL_CHANGED, turn=turn,
                     from_coord=coord, reason=ReasonCode.CTL_CONTESTED,
@@ -755,11 +786,13 @@ def advance_timestep(
     control   = {k: v.model_copy(deep=True) for k, v in world.control.items()}
     objectives = {k: v.model_copy(deep=True) for k, v in world.objectives.items()}
 
-    # Cells already claimed by units NOT in any order (they stay put)
+    # Pre-claim every alive unit's starting position.
+    # Ordered units release their start when they actually move, preventing two
+    # units in the same order from both targeting a cell occupied by a peer.
     ordered_ids = {uid for o in valid_orders for uid in o.unit_ids}
     claimed: dict[Side, set[Coord]] = {Side.BLUE: set(), Side.RED: set()}
     for u in units.values():
-        if u.is_alive and u.unit_id not in ordered_ids:
+        if u.is_alive:
             claimed[u.side].add(u.position)
 
     # 2. Movement

@@ -1,0 +1,474 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "scenario": "Taiwan Strait — Opening Salvo",
+    "description": "Turn Zero game state. This is the starting line. The adjudicator reads this file, resolves modifiers, applies combat math, and writes back an updated version each turn.",
+    "source": "RAND RRA2930-1 — Wargame baseline scenario: 2-day PRC bombardment followed by amphibious + air assault. Game ends at Turn 28 or when one side achieves victory conditions.",
+    "combat_formula": "Damage = (Unit.attack.power × Modifier.Multiplier) - Target.health.armor",
+    "turn_structure": "Each turn: (1) Evaluate triggers → (2) Apply modifiers → (3) Resolve combat actions → (4) Update state → (5) Check victory conditions"
+  },
+
+  "turn": {
+    "current": 0,
+    "max": 28,
+    "phase": "SETUP",
+    "phases_in_order": ["SETUP", "MODIFIER_EVAL", "MOVEMENT", "COMBAT", "LOGISTICS", "END_OF_TURN"]
+  },
+
+  "scenario_flags": {
+    "description": "Boolean switches that trigger modifiers. The adjudicator checks these first each turn. Set by game events, not manually.",
+    "GPS_DENIED": false,
+    "STRAIT_MINED": true,
+    "IWN_ACTIVE": false,
+    "DRONE_MIMIC_ACTIVE": false,
+    "PRC_IO_CAMPAIGN": false,
+    "TRANSLATION_CAPABLE": false,
+    "RESERVE_MOBILIZATION_DEGRADED": false,
+    "ALLY_BASING_RESTRICTED": false,
+    "DATA_POISONING_ACTIVE": false,
+    "FUEL_SHORTAGE_BLUE": false,
+    "FUEL_SHORTAGE_RED": false
+  },
+
+  "political_cohesion": {
+    "current_score": 75,
+    "floor": 10,
+    "ceiling": 100,
+    "reserve_mobilization_threshold": 50,
+    "ally_basing_threshold": 40,
+    "description": "Degrades via MOD-POL-001 (collateral damage) and MOD-INFO-001 (PRC IO). If score drops below reserve_mobilization_threshold, MOD-POL-003 triggers automatically."
+  },
+
+  "player_stats": {
+    "BLUE": {
+      "faction_name": "US-Taiwan Coalition",
+      "dollars_millions": 4200,
+      "income_per_turn_millions": 340,
+      "supply_chain_pct": 74,
+      "stability_pct": 61,
+      "intel_pct": 43,
+      "risk_status": {
+        "economic": "NOMINAL",
+        "supply_chain": "DEGRADED",
+        "political_will": "NOMINAL",
+        "proxy_forces": "NOMINAL"
+      },
+      "primary_objective": {
+        "type": "RESOURCE_CONTROL",
+        "target_nodes": 4,
+        "held_nodes": 2,
+        "status": "IN_PROGRESS"
+      },
+      "secondary_objective": {
+        "type": "DETERRENCE",
+        "status": "ACTIVE"
+      }
+    },
+    "RED_CN": {
+      "faction_name": "People's Liberation Army",
+      "dollars_millions": 6800,
+      "income_per_turn_millions": 520,
+      "supply_chain_pct": 91,
+      "stability_pct": 88,
+      "intel_pct": 67,
+      "risk_status": {
+        "economic": "NOMINAL",
+        "supply_chain": "NOMINAL",
+        "political_will": "NOMINAL",
+        "proxy_forces": "NOMINAL"
+      },
+      "primary_objective": {
+        "type": "BEACHHEAD_ESTABLISHED",
+        "target_nodes": ["BEACH-N1", "BEACH-N2"],
+        "held_nodes": [],
+        "status": "NOT_STARTED"
+      },
+      "secondary_objective": {
+        "type": "AIR_SUPERIORITY",
+        "status": "CONTESTED"
+      }
+    }
+  },
+
+  "nodes": {
+    "description": "The map. Each node is a location. Units sit on nodes. Nodes have types that affect modifier triggers and terrain rules.",
+    "node_types": ["AIRFIELD", "PORT", "URBAN_DENSE", "URBAN", "STRAIT", "OPEN_OCEAN", "COASTAL", "MOUNTAIN", "JUNGLE", "RURAL", "CARRIER", "FARP"],
+    "map": [
+      {
+        "id": "NODE-TW-001",
+        "name": "Taipei Airfield",
+        "type": "AIRFIELD",
+        "controller": "BLUE",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": true,
+        "adjacent_nodes": ["NODE-TW-002", "NODE-TW-003", "NODE-STRAIT-001"]
+      },
+      {
+        "id": "NODE-TW-002",
+        "name": "Taipei Urban Core",
+        "type": "URBAN_DENSE",
+        "controller": "BLUE",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": true,
+        "adjacent_nodes": ["NODE-TW-001", "NODE-TW-003", "NODE-TW-004"]
+      },
+      {
+        "id": "NODE-TW-003",
+        "name": "Tainan Port",
+        "type": "PORT",
+        "controller": "BLUE",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": true,
+        "adjacent_nodes": ["NODE-TW-001", "NODE-TW-002", "NODE-STRAIT-001", "BEACH-N1"]
+      },
+      {
+        "id": "NODE-TW-004",
+        "name": "Central Mountain Range",
+        "type": "MOUNTAIN",
+        "controller": "BLUE",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": false,
+        "adjacent_nodes": ["NODE-TW-002", "NODE-TW-005"]
+      },
+      {
+        "id": "NODE-TW-005",
+        "name": "Eastern Taiwan Rural",
+        "type": "RURAL",
+        "controller": "BLUE",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": true,
+        "adjacent_nodes": ["NODE-TW-004"]
+      },
+      {
+        "id": "NODE-STRAIT-001",
+        "name": "Taiwan Strait — Northern Channel",
+        "type": "STRAIT",
+        "controller": "CONTESTED",
+        "status": "MINED",
+        "under_bombardment": false,
+        "contested": true,
+        "supply_connected": false,
+        "adjacent_nodes": ["NODE-TW-003", "NODE-CN-001", "NODE-STRAIT-002"]
+      },
+      {
+        "id": "NODE-STRAIT-002",
+        "name": "Taiwan Strait — Southern Channel",
+        "type": "STRAIT",
+        "controller": "CONTESTED",
+        "status": "MINED",
+        "under_bombardment": false,
+        "contested": true,
+        "supply_connected": false,
+        "adjacent_nodes": ["BEACH-N1", "BEACH-N2", "NODE-CN-002", "NODE-STRAIT-001"]
+      },
+      {
+        "id": "BEACH-N1",
+        "name": "Northern Beachhead",
+        "type": "COASTAL",
+        "controller": "CONTESTED",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": true,
+        "supply_connected": false,
+        "adjacent_nodes": ["NODE-TW-003", "NODE-STRAIT-002", "BEACH-N2"]
+      },
+      {
+        "id": "BEACH-N2",
+        "name": "Southern Beachhead",
+        "type": "COASTAL",
+        "controller": "CONTESTED",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": true,
+        "supply_connected": false,
+        "adjacent_nodes": ["BEACH-N1", "NODE-STRAIT-002", "NODE-CN-002"]
+      },
+      {
+        "id": "NODE-CN-001",
+        "name": "Fujian Airbase",
+        "type": "AIRFIELD",
+        "controller": "RED_CN",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": true,
+        "adjacent_nodes": ["NODE-STRAIT-001", "NODE-CN-002"]
+      },
+      {
+        "id": "NODE-CN-002",
+        "name": "Xiamen Port — Amphibious Staging",
+        "type": "PORT",
+        "controller": "RED_CN",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": true,
+        "adjacent_nodes": ["NODE-CN-001", "NODE-STRAIT-002", "BEACH-N2"]
+      },
+      {
+        "id": "NODE-US-001",
+        "name": "Kadena Air Base — Okinawa",
+        "type": "AIRFIELD",
+        "controller": "BLUE",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": true,
+        "adjacent_nodes": ["NODE-TW-001", "NODE-OCEAN-001"]
+      },
+      {
+        "id": "NODE-OCEAN-001",
+        "name": "Western Pacific — Carrier Operating Area",
+        "type": "OPEN_OCEAN",
+        "controller": "BLUE",
+        "status": "OPERATIONAL",
+        "under_bombardment": false,
+        "contested": false,
+        "supply_connected": true,
+        "adjacent_nodes": ["NODE-US-001", "NODE-STRAIT-001"]
+      }
+    ]
+  },
+
+  "units_on_map": {
+    "description": "All deployed units. current_stats begin as base stats from unit library. The adjudicator overwrites current_stats each turn after modifier resolution. base_stats are never mutated — they are the reference.",
+    "units": [
+      {
+        "unit_id": "AIR-001-A",
+        "library_ref": "AIR-001",
+        "name": "F-35A Strike Wing",
+        "affiliation": "BLUE",
+        "current_node": "NODE-US-001",
+        "status": "READY",
+        "consecutive_move_turns_without_supply": 0,
+        "active_modifiers": [],
+        "modifier_durations": {},
+        "current_stats": {
+          "attack_power": 92,
+          "attack_range_km": 300,
+          "magazine_depth": 4,
+          "reload_turns": 2,
+          "sensor_range_km": 200,
+          "reveal_quality": "FULL_PROFILE",
+          "speed_per_turn_km": 800,
+          "operational_radius_km": 1200,
+          "armor": 35,
+          "current_hp": 2,
+          "max_hp": 2,
+          "regen_per_turn": 15,
+          "upkeep_per_turn_millions": 0.8,
+          "move_cost_per_turn_millions": 1.2
+        }
+      },
+      {
+        "unit_id": "AIR-001-B",
+        "library_ref": "AIR-001",
+        "name": "F-35A Strike Wing (2nd)",
+        "affiliation": "BLUE",
+        "current_node": "NODE-TW-001",
+        "status": "READY",
+        "consecutive_move_turns_without_supply": 0,
+        "active_modifiers": [],
+        "modifier_durations": {},
+        "current_stats": {
+          "attack_power": 92,
+          "attack_range_km": 300,
+          "magazine_depth": 4,
+          "reload_turns": 2,
+          "sensor_range_km": 200,
+          "reveal_quality": "FULL_PROFILE",
+          "speed_per_turn_km": 800,
+          "operational_radius_km": 1200,
+          "armor": 35,
+          "current_hp": 2,
+          "max_hp": 2,
+          "regen_per_turn": 15,
+          "upkeep_per_turn_millions": 0.8,
+          "move_cost_per_turn_millions": 1.2
+        }
+      },
+      {
+        "unit_id": "AIR-002-A",
+        "library_ref": "AIR-002",
+        "name": "J-20 Stealth Squadron",
+        "affiliation": "RED_CN",
+        "current_node": "NODE-CN-001",
+        "status": "READY",
+        "consecutive_move_turns_without_supply": 0,
+        "active_modifiers": [],
+        "modifier_durations": {},
+        "current_stats": {
+          "attack_power": 88,
+          "attack_range_km": 250,
+          "magazine_depth": 3,
+          "reload_turns": 2,
+          "sensor_range_km": 180,
+          "reveal_quality": "FULL_PROFILE",
+          "speed_per_turn_km": 750,
+          "operational_radius_km": 1100,
+          "armor": 32,
+          "current_hp": 2,
+          "max_hp": 2,
+          "regen_per_turn": 12,
+          "upkeep_per_turn_millions": 0.7,
+          "move_cost_per_turn_millions": 1.0
+        }
+      },
+      {
+        "unit_id": "LI-001-A",
+        "library_ref": "LI-001",
+        "name": "US Ranger Battalion",
+        "affiliation": "BLUE",
+        "current_node": "NODE-TW-002",
+        "status": "READY",
+        "consecutive_move_turns_without_supply": 0,
+        "active_modifiers": [],
+        "modifier_durations": {},
+        "current_stats": {
+          "attack_power": 72,
+          "attack_range_km": 3,
+          "magazine_depth": 6,
+          "reload_turns": 1,
+          "sensor_range_km": 15,
+          "reveal_quality": "IDENTITY",
+          "speed_per_turn_km": 40,
+          "operational_radius_km": 200,
+          "armor": 20,
+          "current_hp": 4,
+          "max_hp": 4,
+          "regen_per_turn": 10,
+          "upkeep_per_turn_millions": 0.05,
+          "move_cost_per_turn_millions": 0.05
+        }
+      },
+      {
+        "unit_id": "IRR-001-A",
+        "library_ref": "IRR-001",
+        "name": "Urban Resistance Cell",
+        "affiliation": "BLUE",
+        "current_node": "NODE-TW-002",
+        "status": "READY",
+        "consecutive_move_turns_without_supply": 0,
+        "active_modifiers": [],
+        "modifier_durations": {},
+        "current_stats": {
+          "attack_power": 25,
+          "attack_range_km": 1,
+          "magazine_depth": 4,
+          "reload_turns": 1,
+          "sensor_range_km": 3,
+          "reveal_quality": "POSITION",
+          "speed_per_turn_km": 15,
+          "operational_radius_km": 20,
+          "armor": 5,
+          "current_hp": 2,
+          "max_hp": 2,
+          "regen_per_turn": 8,
+          "upkeep_per_turn_millions": 0.005,
+          "move_cost_per_turn_millions": 0.005
+        }
+      },
+      {
+        "unit_id": "MARITIME-CN-001",
+        "library_ref": "MAR-001",
+        "name": "PLA Amphibious Assault Group",
+        "affiliation": "RED_CN",
+        "current_node": "NODE-CN-002",
+        "status": "STAGING",
+        "consecutive_move_turns_without_supply": 0,
+        "active_modifiers": [],
+        "modifier_durations": {},
+        "current_stats": {
+          "attack_power": 70,
+          "attack_range_km": 50,
+          "magazine_depth": 5,
+          "reload_turns": 3,
+          "sensor_range_km": 80,
+          "reveal_quality": "IDENTITY",
+          "speed_per_turn_km": 45,
+          "operational_radius_km": 500,
+          "armor": 30,
+          "current_hp": 5,
+          "max_hp": 5,
+          "regen_per_turn": 10,
+          "upkeep_per_turn_millions": 1.2,
+          "move_cost_per_turn_millions": 0.9
+        }
+      }
+    ]
+  },
+
+  "active_modifier_instances": {
+    "description": "Modifiers currently in flight across the scenario. The adjudicator writes here when a modifier triggers, and decrements duration each turn. This is the single source of truth for what is active.",
+    "instances": [
+      {
+        "instance_id": "INST-001",
+        "modifier_id": "MOD-ENV-002",
+        "name": "Taiwan Strait Maritime Hazard",
+        "triggered_by": "STRAIT_MINED flag set at scenario start",
+        "affects": "All RED_CN MARITIME units transiting NODE-STRAIT-001 or NODE-STRAIT-002",
+        "turn_triggered": 0,
+        "duration_turns": "PERSISTENT",
+        "turns_remaining": "PERSISTENT",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+
+  "combat_log": {
+    "description": "Append-only record of every combat action resolved this scenario. The adjudicator writes here. The UI reads here for the modifier dashboard.",
+    "entries": []
+  },
+
+  "combat_log_entry_schema": {
+    "description": "Shape of each entry the adjudicator appends to combat_log.entries after resolving an action",
+    "example": {
+      "turn": 1,
+      "action_id": "ACT-001",
+      "attacker_unit_id": "AIR-001-A",
+      "defender_unit_id": "MARITIME-CN-001",
+      "target_node": "NODE-STRAIT-001",
+      "base_attack_power": 92,
+      "modifiers_applied": [
+        {
+          "modifier_id": "MOD-EW-001",
+          "name": "GPS-Denied Environment",
+          "field_affected": "attack.power",
+          "operator": "MULTIPLY",
+          "value": 0.65,
+          "source": "RAND RR4229",
+          "power_after": 59.8
+        }
+      ],
+      "final_attack_power": 59.8,
+      "target_armor": 30,
+      "damage_dealt": 29.8,
+      "formula": "(92 × 0.65) - 30 = 29.8",
+      "defender_hp_before": 5,
+      "defender_hp_after": 4,
+      "defender_status_after": "DAMAGED",
+      "narrative": "F-35A Strike Wing attacks PLA Amphibious Assault Group in the Strait. GPS jamming degrades precision guidance (RAND RR4229 — MOD-EW-001). Effective strike power reduced from 92 to 59.8. Armor absorbs 30. Net damage: 29.8."
+    }
+  },
+
+  "victory_conditions": {
+    "BLUE": {
+      "win": "Reduce RED_CN amphibious force below 33% strength before Turn 14 (reflects RRA2930-1 finding: no amphibious landing in history has emerged victorious at that loss rate)",
+      "lose": "RED_CN establishes control of both BEACH-N1 and BEACH-N2 and holds for 3 consecutive turns"
+    },
+    "RED_CN": {
+      "win": "Establish and hold both beachhead nodes for 3 consecutive turns",
+      "lose": "Amphibious force drops below 33% of Turn 0 strength"
+    }
+  }
+}

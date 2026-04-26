@@ -1,0 +1,265 @@
+{
+  "schema_version": "1.0",
+  "doctrine_basis": [
+    "ATP 2-01.3 (IPB)",
+    "FM 3-90-1",
+    "FM 3-06",
+    "ATP 3-21.20",
+    "FM 3-90-4"
+  ],
+  "field_definitions": {
+    "movement_cost": "Action point multiplier. Base AP cost × this value = tile crossing cost. Open = 1.0 baseline.",
+    "cover_bonus": "Bonus added to defender's D20 roll vs direct fire. Range 0–5.",
+    "concealment": "Difficulty modifier for observer spotting. Added to spotting DC. Range 0–5.",
+    "los_range_mod": "Multiplier applied to max observation/fire range. <1 degrades, >1 extends.",
+    "logistics": "Boolean flags: can each unit class enter without engineer support?",
+    "unit_restrictions": "Narrative constraints from doctrine requiring human/engine adjudication."
+  },
+  "terrain_tiles": [
+    {
+      "id": "open",
+      "label": "Open / Farmland",
+      "ipb_category": "Unrestricted",
+      "movement_cost": 1.0,
+      "cover_bonus": 0,
+      "concealment": 0,
+      "los_range_mod": 1.0,
+      "logistics": {
+        "wheeled": true,
+        "tracked": true,
+        "infantry": true,
+        "airmobile": true
+      },
+      "unit_restrictions": [],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 3-90-1 Table C-1",
+      "notes": "OAKOC avenues of approach—high trafficability. No cover or concealment for defender."
+    },
+    {
+      "id": "urban_sparse",
+      "label": "Sparse Urban",
+      "ipb_category": "Restricted",
+      "movement_cost": 1.5,
+      "cover_bonus": 2,
+      "concealment": 2,
+      "los_range_mod": 0.6,
+      "logistics": {
+        "wheeled": true,
+        "tracked": true,
+        "infantry": true,
+        "airmobile": false
+      },
+      "unit_restrictions": [
+        "Airmobile LZs require open area clearance"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 3-34.170",
+      "notes": "Scattered buildings; moderate overhead cover and channeled lines of fire. Key terrain per ASCOPE."
+    },
+    {
+      "id": "urban_dense",
+      "label": "Dense Urban",
+      "ipb_category": "Severely Restricted",
+      "movement_cost": 2.5,
+      "cover_bonus": 4,
+      "concealment": 4,
+      "los_range_mod": 0.3,
+      "logistics": {
+        "wheeled": false,
+        "tracked": false,
+        "infantry": true,
+        "airmobile": false
+      },
+      "unit_restrictions": [
+        "Tanks cannot enter without infantry support (ATP 3-21.20)",
+        "Wheeled vehicles limited to main roads"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 3-06; ATP 3-21.20",
+      "notes": "Dominant terrain for IPB Step 2. Severely restricts avenues of approach, provides maximum cover/concealment to defender. Observation & Fields of Fire severely degraded."
+    },
+    {
+      "id": "forest_light",
+      "label": "Light Forest / Scrub",
+      "ipb_category": "Restricted",
+      "movement_cost": 1.5,
+      "cover_bonus": 1,
+      "concealment": 3,
+      "los_range_mod": 0.5,
+      "logistics": {
+        "wheeled": true,
+        "tracked": true,
+        "infantry": true,
+        "airmobile": false
+      },
+      "unit_restrictions": [
+        "Airmobile LZs absent unless clearing available"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 3-90-1",
+      "notes": "High concealment, limited cover. Favors infantry. Reduces aerial observation."
+    },
+    {
+      "id": "forest_dense",
+      "label": "Dense Forest / Jungle",
+      "ipb_category": "Severely Restricted",
+      "movement_cost": 3.0,
+      "cover_bonus": 2,
+      "concealment": 5,
+      "los_range_mod": 0.2,
+      "logistics": {
+        "wheeled": false,
+        "tracked": false,
+        "infantry": true,
+        "airmobile": false
+      },
+      "unit_restrictions": [
+        "Mechanized/wheeled assets restricted to established trails",
+        "Canopy degrades aerial observation"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5",
+      "notes": "Severely restricts mobility corridors. Excellent concealment. Danger close fire missions require infantry adjustment."
+    },
+    {
+      "id": "marsh_wetland",
+      "label": "Marsh / Wetland",
+      "ipb_category": "Severely Restricted",
+      "movement_cost": 3.5,
+      "cover_bonus": 0,
+      "concealment": 1,
+      "los_range_mod": 0.8,
+      "logistics": {
+        "wheeled": false,
+        "tracked": false,
+        "infantry": true,
+        "airmobile": true
+      },
+      "unit_restrictions": [
+        "Vehicles: impassable without engineer bridging/corduroy",
+        "Tracked assets require soil bearing capacity >25 kPa"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 5-34",
+      "notes": "Obstacle to mechanized forces. Supports engineer obstacle analysis. Limited LOS degradation—poor cover."
+    },
+    {
+      "id": "ridge_high_ground",
+      "label": "High Ground / Ridge",
+      "ipb_category": "Key Terrain",
+      "movement_cost": 2.0,
+      "cover_bonus": 2,
+      "concealment": 1,
+      "los_range_mod": 1.5,
+      "logistics": {
+        "wheeled": false,
+        "tracked": true,
+        "infantry": true,
+        "airmobile": true
+      },
+      "unit_restrictions": [
+        "Wheeled vehicles restricted to established switchback routes"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-3; FM 3-90-1 Chapter 2",
+      "notes": "Key terrain per OAKOC—seizure provides observation and fields of fire advantage. Exposes attacker crossing crestline (silhouette)."
+    },
+    {
+      "id": "road_hardball",
+      "label": "Hardball Road / MSR",
+      "ipb_category": "MSR / LOC",
+      "movement_cost": 0.5,
+      "cover_bonus": 0,
+      "concealment": 0,
+      "los_range_mod": 1.0,
+      "logistics": {
+        "wheeled": true,
+        "tracked": true,
+        "infantry": true,
+        "airmobile": false
+      },
+      "unit_restrictions": [
+        "Canalized—ambush vulnerability HIGH",
+        "IED emplacement risk elevates threat COA analysis"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 4-01",
+      "notes": "Primary avenue of approach for logistics. Main Supply Route (MSR) classification. Canalization = decisive terrain for threat interdiction COAs."
+    },
+    {
+      "id": "water_obstacle",
+      "label": "River / Water Obstacle",
+      "ipb_category": "Obstacle",
+      "movement_cost": 5.0,
+      "cover_bonus": 0,
+      "concealment": 0,
+      "los_range_mod": 1.0,
+      "logistics": {
+        "wheeled": false,
+        "tracked": false,
+        "infantry": false,
+        "airmobile": true
+      },
+      "unit_restrictions": [
+        "Impassable without bridging or fording site (< 0.9m depth for wheeled)",
+        "Engineer bridging reduces cost to 2.0",
+        "Infantry swim crossing increases vulnerability"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 3-90-4",
+      "notes": "Hard obstacle. Fording sites and bridges are decisive terrain features. IPB must identify crossing sites, current speed, and bank slope."
+    },
+    {
+      "id": "desert_open",
+      "label": "Desert / Arid Open",
+      "ipb_category": "Unrestricted",
+      "movement_cost": 1.2,
+      "cover_bonus": 0,
+      "concealment": 0,
+      "los_range_mod": 1.3,
+      "logistics": {
+        "wheeled": true,
+        "tracked": true,
+        "infantry": true,
+        "airmobile": true
+      },
+      "unit_restrictions": [
+        "Dust signature degrades OPSEC",
+        "Heat increases vehicle maintenance cycle"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 3-90-1",
+      "notes": "Extended LOS favors long-range direct fire and aerial observation. Near-zero cover/concealment—attacker exposed. Duststorms temporarily reduce LOS to 0.2."
+    },
+    {
+      "id": "minefield",
+      "label": "Minefield / Obstacle Belt",
+      "ipb_category": "Obstacle",
+      "movement_cost": 10.0,
+      "cover_bonus": 0,
+      "concealment": 0,
+      "los_range_mod": 1.0,
+      "logistics": {
+        "wheeled": false,
+        "tracked": false,
+        "infantry": false,
+        "airmobile": false
+      },
+      "unit_restrictions": [
+        "Impassable without engineer breach",
+        "Breach reduces cost to adjacent terrain + 2.0",
+        "All units require engineer support or route around"
+      ],
+      "doctrinal_ref": "ATP 2-01.3 §4-5; FM 3-90-4; ATP 3-90.8",
+      "notes": "Manmade obstacle. Must be templated on SITEMP. IPB Step 4 threat COA must account for obstacle integration into defensive scheme."
+    },
+    {
+      "id": "airfield",
+      "label": "Airfield / LZ",
+      "ipb_category": "Key Terrain / Decisive",
+      "movement_cost": 0.8,
+      "cover_bonus": 0,
+      "concealment": 0,
+      "los_range_mod": 1.2,
+      "logistics": {
+        "wheeled": true,
+        "tracked": true,
+        "infantry": true,
+        "airmobile": true
+      },
+      "unit_restrictions": [],
+      "doctrinal_ref": "ATP 2-01.3 ASCOPE; FM 3-99",
+      "notes": "Decisive terrain per ASCOPE (structure). Control of airfield enables airmobile and air assault operations. High-value target for threat interdiction."
+    }
+  ]
+}

@@ -8,6 +8,8 @@ interface Props {
   scenario: Scenario
   gameState: GameState
   onDecision: (key: DecisionKey, note: string) => void
+  disabled?: boolean
+  simulating?: boolean
 }
 
 // ── Category styling ──────────────────────────────────────────────────────
@@ -62,7 +64,7 @@ function CpBar({ label, value, side }: { label: string; value: number; side: 'bl
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function RunView({ scenario, gameState, onDecision }: Props) {
+export default function RunView({ scenario, gameState, onDecision, disabled = false, simulating = false }: Props) {
   const [selectedKey, setSelectedKey] = useState<DecisionKey | null>(null)
   const [note, setNote] = useState('')
   const [isAdjudicating, setIsAdjudicating] = useState(false)
@@ -249,7 +251,32 @@ export default function RunView({ scenario, gameState, onDecision }: Props) {
         </div>
 
         {/* Decision panel */}
-        {isAdjudicating ? (
+        {simulating ? (
+          <div className="adjudicating">
+            <div style={{ marginBottom: 14 }}>
+              <span className="adj-spinner" />
+              <span className="accent" style={{ letterSpacing: '0.12em', fontSize: 12 }}>AUTO-SIM RUNNING</span>
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
+                <span className="dim">Turn</span>
+                <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{current_turn} / {scenario.turns_total}</span>
+              </div>
+              <div className="cp-bar-track">
+                <div className="cp-bar-fill" style={{
+                  width: `${(current_turn / scenario.turns_total) * 100}%`,
+                  background: 'var(--amber)',
+                  transition: 'width 0.4s ease',
+                }} />
+              </div>
+            </div>
+            <CpBar label={`BLUE — ${scenario.blue_force.name.slice(0, 22)}`} value={blueCP} side="blue" />
+            <CpBar label={`RED — ${scenario.red_force.name.slice(0, 22)}`}   value={redCP}  side="red"  />
+            <div className="small-meta" style={{ textAlign: 'center', marginTop: 8 }}>
+              engine resolving both sides · BLUE strategy: HOLD
+            </div>
+          </div>
+        ) : isAdjudicating ? (
           <div className="adjudicating">
             <div style={{ marginBottom: 14 }}>
               <span className="adj-spinner" />
@@ -310,10 +337,10 @@ export default function RunView({ scenario, gameState, onDecision }: Props) {
               <button
                 className="btn-primary"
                 style={{ width: '100%', marginTop: 12, padding: '11px 0' }}
-                disabled={!selectedKey}
+                disabled={!selectedKey || disabled}
                 onClick={handleSubmit}
               >
-                SUBMIT DECISION  →
+                {disabled ? 'RESOLVING…' : 'SUBMIT DECISION  →'}
               </button>
             </div>
           </div>
