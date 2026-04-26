@@ -48,6 +48,15 @@ export interface Unit {
   notes: string
 }
 
+// Map placement (grid coords). Backend will populate row/col per turn.
+export interface GridUnit {
+  id: string
+  side: SideLabel
+  row: number
+  col: number
+  label: string
+}
+
 export interface Force {
   side: SideLabel
   name: string
