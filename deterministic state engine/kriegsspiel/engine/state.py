@@ -560,7 +560,8 @@ class WorldState(BaseModel):
                 attack_score *= 1.15
 
             # --- damage as a ratio ---
-            damage = attack_score / (attack_score + defense_score)  # 0.0–1.0
+            raw_damage = attack_score / (attack_score + defense_score)  # 0.0–1.0
+            damage = raw_damage * 0.25
 
             # --- apply to strength ---
             target.strength = max(0.0, target.strength - damage)
@@ -579,7 +580,7 @@ class WorldState(BaseModel):
         map = self._build_attack_map(self.unit_decision_list)
         self._resolve_attacks(map)
 
-    def move_units_tactically(self, world, radius: int = 5, seed: int | None = None) -> None:
+    def move_units_tactically(self, radius: int = 15, seed: int | None = None) -> None:
         rng = np.random.default_rng(seed)
         occupied = {u.position for u in self.units.values() if u.is_alive}
 
@@ -597,6 +598,15 @@ class WorldState(BaseModel):
             if not unit.is_alive:
                 continue
 
+            # scale movement by readiness
+            strength_factor = unit.strength * unit.effective_combat_factor
+            if strength_factor < 0.2:
+                continue  # too degraded to move
+            elif strength_factor < 0.5:
+                effective_radius = max(1, int(radius * 0.5))
+            else:
+                effective_radius = radius
+
             pos = np.array(unit.position, dtype=float)
 
             # vector toward enemy center of mass
@@ -609,19 +619,19 @@ class WorldState(BaseModel):
             r, c = unit.position
             candidates = []
 
-            for dr in range(-radius, radius + 1):
-                for dc in range(-radius, radius + 1):
+            for dr in range(-effective_radius, effective_radius + 1):
+                for dc in range(-effective_radius, effective_radius + 1):
                     if dr == 0 and dc == 0:
                         continue
                     coord = (r + dr, c + dc)
-                    if not world.terrain.in_bounds(coord):
+                    if not self.terrain.in_bounds(coord):
                         continue
-                    if not world.terrain.is_passable_ground(coord):
+                    if not self.terrain.is_passable_ground(coord):
                         continue
                     if coord in occupied:
                         continue
 
-                    cell = world.terrain.cell_at(coord)
+                    cell = self.terrain.cell_at(coord)
 
                     # directional score — alignment with enemy vector
                     move_vec = np.array([dr, dc], dtype=float)
@@ -653,6 +663,11 @@ class WorldState(BaseModel):
             weights /= weights.sum()
 
             chosen = coords[rng.choice(len(coords), p=weights)]
+
+            old_pos = unit.position
+            dist = chebyshev_distance(old_pos, chosen)
+            print(f"    {unit.unit_id} moved {old_pos} -> {chosen} (distance={dist})")
+
             occupied.discard(unit.position)
             unit.position = chosen
             occupied.add(chosen)

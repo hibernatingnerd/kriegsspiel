@@ -131,6 +131,13 @@ def stop_reason(world, turn_count: int, max_turns: int) -> str:
 
 
 def run_single_turn(world, backend, planner_template, aar_template, audit_log, run_id: str):
+    
+    # --- movement phase --- must be on world, before planning_world is copied
+    print(f"\n[TURN {world.turn}] Moving units...")
+    world.move_units_tactically(radius=15, seed=world.turn)
+    print(f"    Movement complete")
+
+    # copy AFTER movement so planning sees updated positions
     planning_world = world.model_copy(deep=True)
     planning_world.unit_decision_list = []
     planning_world.compute_visibilities(k=5)
@@ -138,13 +145,6 @@ def run_single_turn(world, backend, planner_template, aar_template, audit_log, r
     pre_turn_hash = canonical_hash(world_summary(world))
     pre_combat_snap = snapshot_units_for_delta(world)
     world.unit_decision_list = []
-
-    # --- movement phase ---
-    print(f"\n[TURN {world.turn}] Moving units...")
-    planning_world.move_units_tactically(world, radius=5, seed=world.turn)
-    print(f"    Movement complete")
-
-    print(f"\n[TURN {world.turn}] BLUE planning (Claude call)...")
 
     print(f"\n[TURN {world.turn}] BLUE planning (Claude call)...")
     blue = plan_side(planning_world, "BLUE", backend=backend, prompt_template=planner_template)
