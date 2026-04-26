@@ -14,6 +14,7 @@ import { mockAdjudicate } from '@/lib/adjudicate'
 import SetupView   from '@/components/SetupView'
 import RunView     from '@/components/RunView'
 import DebriefView from '@/components/DebriefView'
+import ApiStatus   from '@/components/ApiStatus'
 
 const NOW  = '2026-04-25 17:42 UTC'
 const USER = 'JEFF.CAMPBELL'
@@ -133,7 +134,10 @@ export default function Home() {
           <span className="brand">KRIEGSSPIEL</span>
           <span className="meta" style={{ marginLeft: 14 }}>AI Wargame Production · v0.1</span>
         </div>
-        <div className="meta">{USER} · {NOW}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <ApiStatus />
+          <span className="meta">{USER} · {NOW}</span>
+        </div>
       </div>
 
       <PhaseStepper phase={phase} onSelect={handleTabSelect} />
